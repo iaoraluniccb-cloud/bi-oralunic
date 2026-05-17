@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BI – Oral Unic Carlos Barbosa</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Cormorant+SC:wght@300;400&family=Josefin+Sans:wght@200;300;400&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --wine:#8B2D42;--wine-dk:#6A1F30;--wine-lt:#B85C72;--wine-pale:#D4899A;
+    --copper:#C4955A;--copper-lt:#D4AA7A;
+    --ivory:#FDF9F4;--cream:#F5EDE2;--blush:#EDDDD4;--blush-lt:#F7F0EB;
+    --warm:#E0C9B8;--moka:#3D2A20;--ink:#1A0F0A;
+    --green:#2E7D5E;--yellow:#B8860B;--red:#8B2D42;--blue:#2D5A8B;
+    --nav-h:60px;--filter-h:48px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--cream);color:var(--ink);font-family:'Josefin Sans',sans-serif;font-size:13px;font-weight:300;min-height:100vh;}
+
+  /* NAV */
+  .header{display:flex;align-items:center;padding:0 28px;height:var(--nav-h);background:var(--ivory);border-bottom:1px solid var(--warm);position:sticky;top:0;z-index:100;gap:16px;}
+  .logo{font-family:'Cormorant SC',serif;font-size:18px;font-weight:400;letter-spacing:2px;color:var(--wine-dk);white-space:nowrap;}
+  .logo span{color:var(--copper);font-style:italic;}
+  .nav-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;}
+  .tab-btn{padding:8px 18px;border-radius:0;border:none;border-bottom:2px solid transparent;cursor:pointer;background:transparent;color:var(--moka);font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap;transition:all .2s;}
+  .tab-btn:hover{color:var(--wine);background:var(--blush-lt);}
+  .tab-btn.active{color:var(--wine-dk);border-bottom-color:var(--copper);background:var(--blush-lt);}
+  .refresh-btn{padding:6px 16px;border-radius:2px;border:1px solid var(--warm);background:transparent;color:var(--wine);cursor:pointer;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:300;letter-spacing:1px;white-space:nowrap;transition:all .22s;}
+  .refresh-btn:hover{background:var(--wine);border-color:var(--wine);color:var(--ivory);}
+  .refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
+  .status-dot.ok{background:var(--green);}
+  .status-dot.loading{background:var(--copper);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .last-update{font-size:10px;color:var(--moka);letter-spacing:.5px;}
+
+  /* FILTER BAR */
+  .filter-bar{display:flex;align-items:center;gap:12px;padding:0 28px;height:var(--filter-h);background:var(--blush-lt);border-bottom:1px solid var(--warm);position:sticky;top:var(--nav-h);z-index:99;flex-wrap:wrap;}
+  .filter-label{color:var(--moka);font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:1.2px;}
+  .year-btn,.month-btn{padding:3px 12px;border-radius:2px;border:1px solid var(--warm);background:transparent;color:var(--moka);cursor:pointer;font-family:'Josefin Sans',sans-serif;font-size:11px;font-weight:300;letter-spacing:.5px;transition:all .15s;}
+  .year-btn:hover,.month-btn:hover{border-color:var(--wine-pale);color:var(--wine);}
+  .year-btn.active,.month-btn.active{background:var(--wine);border-color:var(--wine);color:var(--ivory);}
+  .months-grid{display:flex;gap:4px;flex-wrap:wrap;}
+  .filter-sep{color:var(--warm);margin:0 4px;}
+
+  /* PAGES */
+  .page{display:none;padding:24px 28px;}
+  .page.active{display:block;}
+
+  /* KPI */
+  .kpi-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+  .kpi{flex:1;min-width:150px;max-width:230px;background:var(--ivory);border:1px solid var(--warm);border-radius:4px;padding:18px 20px;position:relative;overflow:hidden;}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--copper);}
+  .kpi-label{font-size:10px;color:var(--moka);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:400;}
+  .kpi-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--wine-dk);line-height:1;}
+  .kpi-sub{font-size:10px;color:var(--moka);margin-top:5px;letter-spacing:.5px;}
+  .kpi.green::before{background:var(--green);}.kpi.green .kpi-value{color:var(--green);}
+  .kpi.yellow::before{background:var(--yellow);}.kpi.yellow .kpi-value{color:var(--yellow);}
+  .kpi.red::before{background:var(--wine);}.kpi.red .kpi-value{color:var(--wine);}
+  .kpi.blue::before{background:var(--blue);}.kpi.blue .kpi-value{color:var(--blue);}
+
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .full-row{margin-bottom:16px;}
+  .chart-card{background:var(--ivory);border:1px solid var(--warm);border-radius:4px;padding:18px 20px;}
+  .chart-title{font-family:'Josefin Sans',sans-serif;font-size:10px;font-weight:400;color:var(--moka);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--blush);}
+  .chart-wrap canvas{max-height:260px;}
+  .chart-wrap.tall canvas{max-height:320px;}
+  .chart-wrap.short canvas{max-height:180px;}
+
+  /* TABLE */
+  .data-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .data-table th{background:var(--blush);color:var(--moka);font-family:'Josefin Sans',sans-serif;font-weight:400;padding:9px 12px;text-align:left;border-bottom:1px solid var(--warm);text-transform:uppercase;letter-spacing:.8px;font-size:10px;}
+  .data-table td{padding:8px 12px;border-bottom:1px solid var(--blush);color:var(--ink);}
+  .data-table tr:hover td{background:var(--blush-lt);}
+  .data-table .num{text-align:right;font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:300;}
+
+  /* BADGES */
+  .badge{display:inline-block;padding:2px 10px;border-radius:2px;font-size:10px;font-weight:400;letter-spacing:.5px;font-family:'Josefin Sans',sans-serif;}
+  .badge-green{background:rgba(46,125,94,.1);color:var(--green);border:1px solid rgba(46,125,94,.25);}
+  .badge-red{background:rgba(139,45,66,.1);color:var(--wine);border:1px solid rgba(139,45,66,.25);}
+  .badge-yellow{background:rgba(184,134,11,.1);color:var(--yellow);border:1px solid rgba(184,134,11,.25);}
+
+  /* FINANCEIRO */
+  .section-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;color:var(--wine-dk);margin-bottom:16px;padding-left:12px;border-left:2px solid var(--copper);}
+  .saldo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .saldo-card{background:var(--ivory);border:1px solid var(--warm);border-radius:4px;padding:16px 18px;}
+  .saldo-label{font-size:10px;color:var(--moka);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+  .saldo-value{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--wine-dk);}
+  .saldo-sub{font-size:10px;color:var(--moka);margin-top:4px;}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--cream);}
+  ::-webkit-scrollbar-thumb{background:var(--warm);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Oral<span>Unic</span> · Carlos Barbosa</div>
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="showPage('cirurgias',this)">Cirurgias</button>
+    <button class="tab-btn" onclick="showPage('labacrilico',this)">Lab Acrílico</button>
+    <button class="tab-btn" onclick="showPage('labceramico',this)">Lab Cerâmico</button>
+    <button class="tab-btn" onclick="showPage('financeiro',this)">Financeiro</button>
+    <button class="tab-btn" onclick="showPage('resgate',this)">Leads / Resgate</button>
+  </nav>
+  <span class="status-dot local" id="statusDot" title="Dados locais"></span>
+  <span class="last-update" id="lastUpdate">Dados embutidos</span>
+  <button class="refresh-btn" id="refreshBtn" onclick="tryOnlineUpdate()">↺ Atualizar Sheets</button>
+</div>
+
+<div class="filter-bar">
+  <span class="filter-label">Ano</span>
+  <button class="year-btn active" data-year="2024" onclick="toggleYear(this)">2024</button>
+  <button class="year-btn active" data-year="2025" onclick="toggleYear(this)">2025</button>
+  <button class="year-btn active" data-year="2026" onclick="toggleYear(this)">2026</button>
+  <span class="filter-sep">|</span>
+  <span class="filter-label">Mês</span>
+  <div class="months-grid" id="monthsGrid"></div>
+</div>
+
+<!-- CIRURGIAS -->
+<div class="page active" id="page-cirurgias">
+  <div class="kpi-row" id="cirKpis"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Cirurgias por Mês</div><div class="chart-wrap"><canvas id="cirMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Cirurgias por Tipo</div><div class="chart-wrap"><canvas id="cirTipo"></canvas></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Por Dentista</div><div class="chart-wrap short"><canvas id="cirDentista"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Implantes Perdidos – Motivos</div><div class="chart-wrap short"><canvas id="cirPerdidos"></canvas></div></div>
+  </div>
+  <div class="chart-card full-row">
+    <div class="chart-title">Implantes Perdidos – Detalhes</div>
+    <table class="data-table" id="cirPerdidosTable"><thead><tr><th>Dentista</th><th>Paciente</th><th>Motivo</th><th>Data</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<!-- LAB ACRÍLICO -->
+<div class="page" id="page-labacrilico">
+  <div class="kpi-row" id="acrKpis"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Trabalhos por Mês</div><div class="chart-wrap"><canvas id="acrMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Trabalhos por Tipo</div><div class="chart-wrap"><canvas id="acrTipo"></canvas></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Barras por Mês (Marcelo)</div><div class="chart-wrap"><canvas id="acrBarras"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Entrega por Dentista</div><div class="chart-wrap"><canvas id="acrDentista"></canvas></div></div>
+  </div>
+</div>
+
+<!-- LAB CERÂMICO -->
+<div class="page" id="page-labceramico">
+  <div class="kpi-row" id="cerKpis"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Trabalhos por Mês</div><div class="chart-wrap"><canvas id="cerMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Distribuição por Tipo</div><div class="chart-wrap"><canvas id="cerTipo"></canvas></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Por Laboratório</div><div class="chart-wrap tall"><canvas id="cerLab"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Repetições por Motivo</div><div class="chart-wrap"><canvas id="cerRep"></canvas></div></div>
+  </div>
+</div>
+
+<!-- FINANCEIRO -->
+<div class="page" id="page-financeiro">
+  <div class="section-title">Saldo Atual (último registro)</div>
+  <div class="saldo-grid" id="finSaldos"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Entradas / Despesas / Lucro (Mensal)</div><div class="chart-wrap tall"><canvas id="finLinhas"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Divisão de Lucro por Mês</div><div class="chart-wrap tall"><canvas id="finLucro"></canvas></div></div>
+  </div>
+  <div class="chart-card full-row">
+    <div class="chart-title">Fechamento Mensal</div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="finTable">
+        <thead><tr><th>Mês/Ano</th><th class="num">Fat. Bruto</th><th class="num">Total Entradas</th><th class="num">Despesas</th><th class="num">Lucro Op.</th><th class="num">Div. Lucro</th><th class="num">Avaliações</th><th class="num">Fechamentos</th><th class="num">Conversão</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- RESGATE -->
+<div class="page" id="page-resgate">
+  <div class="kpi-row" id="resKpis"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Total Resgate por Mês</div><div class="chart-wrap"><canvas id="resMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Resgate 30D vs 30+ por Mês</div><div class="chart-wrap"><canvas id="res30"></canvas></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Avaliações vs Fechamentos</div><div class="chart-wrap"><canvas id="resConv"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Ticket Médio por Mês</div><div class="chart-wrap"><canvas id="resTick"></canvas></div></div>
+  </div>
+  <div class="chart-card full-row">
+    <div class="chart-title">Resumo por Mês – Resgate</div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="resTable">
+        <thead><tr><th>Mês/Ano</th><th class="num">Total</th><th class="num">30D (R$)</th><th class="num">30+ (R$)</th><th class="num">Pac. 30D</th><th class="num">Pac. 30+</th><th class="num">Meta</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  #loadingOverlay{position:fixed;inset:0;background:var(--ivory);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+  .spin{width:44px;height:44px;border:2px solid var(--warm);border-top-color:var(--copper);border-radius:50%;animation:spin .9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .load-msg{font-family:'Cormorant Garamond',serif;color:var(--wine-dk);font-size:22px;font-weight:300;letter-spacing:2px;}
+  .load-sub{font-family:'Josefin Sans',sans-serif;color:var(--moka);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;}
+  #errorOverlay{position:fixed;inset:0;background:var(--ivory);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:40px;}
+  .err-icon{font-size:40px;}
+  .err-title{font-family:'Cormorant Garamond',serif;color:var(--wine-dk);font-size:24px;font-weight:300;letter-spacing:1px;}
+  .err-msg{font-family:'Josefin Sans',sans-serif;color:var(--moka);font-size:12px;max-width:420px;line-height:1.8;font-weight:300;}
+  .retry-btn{padding:10px 32px;border-radius:2px;border:1px solid var(--wine);background:transparent;color:var(--wine);cursor:pointer;font-family:'Josefin Sans',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;transition:all .22s;}
+  .retry-btn:hover{background:var(--wine);color:var(--ivory);}
+</style>
+<div id="loadingOverlay">
+  <div class="spin"></div>
+  <div class="load-msg">Carregando dados…</div>
+  <div class="load-sub" id="loadStep">Conectando ao Google Sheets</div>
+</div>
+<div id="errorOverlay">
+  <div class="err-icon">⚠️</div>
+  <div class="err-title">Não foi possível carregar os dados</div>
+  <div class="err-msg" id="errMsg">Verifique sua conexão com a internet e tente novamente. O arquivo precisa ser acessado via navegador online para buscar os dados das planilhas.</div>
+  <button class="retry-btn" onclick="iniciarCarregamento()">↺ Tentar novamente</button>
+</div>
+
+<script>
+// =============================================
+// ESTADO
+// =============================================
+/* SEED_CIR_START — será substituído dinamicamente; deixado aqui apenas como placeholder */
+const SEED_CIR = [
+// Janeiro 2025 — dados reais
+[45663,'Dr Aurelio','Sisos',1],[45663,'Dr Aurelio','Sisos',1],[45663,'Dr Aurelio','Implante Unitario',2],
+[45664,'Dr Aurelio','Sedação',1],[45664,'Dr Aurelio','Protocolo Superior',4],[45664,'Dr Aurelio','Sedação',1],[45664,'Dr Aurelio','Protocolo Inferior',4],
+[45665,'Dr Schales','Óxido Nitroso',1],[45665,'Dr Schales','Exodontia',1],[45665,'Dr Schales','Sisos',1],[45665,'Dr Schales','Sisos',1],
+[45666,'Dr Schales','Reabertura',1],[45666,'Dr Aurelio','Implante Unitario',1],[45666,'Dr Aurelio','Implante Unitario',2],[45666,'Dr Aurelio','Protocolo Inferior',4],
+[45667,'Dr Aurelio','Exodontia',1],[45667,'Dr Aurelio','Aumento Coroa',1],[45667,'Dr Aurelio','Protocolo Inferior',4],[45667,'Dr Aurelio','Exodontia',1],
+[45670,'Dr Aurelio','Implante Unitario',2],
+[45671,'Dr Aurelio','Sedação',1],[45671,'Dr Aurelio','Protocolo Superior',4],[45671,'Dr Aurelio','Sedação',1],[45671,'Dr Aurelio','Protocolo Superior',5],[45671,'Dr Aurelio','Sedação',1],[45671,'Dr Aurelio','Exodontia',1],
+[45672,'Dr Schales','Sisos',1],[45672,'Dr Schales','Implante Unitario',1],[45672,'Dr Schales','Implante Unitario',1],[45672,'Dr Schales','Sisos',1],
+[45674,'Dr Schales','Reabertura',1],[45674,'Dr Aurelio','Implante Unitario',1],
+[45677,'Dr Schales','Reabertura',1],[45677,'Dr Schales','Reabertura',1],[45677,'Dr Aurelio','Protocolo Inferior',4],[45677,'Dr Aurelio','Protocolo Superior',4],[45677,'Dr Aurelio','Implante Unitario',1],[45677,'Dr Aurelio','Implante Unitario',2],
+[45678,'Dr Aurelio','Sedação',1],[45678,'Dr Aurelio','Protocolo Superior',4],[45678,'Dr Aurelio','Sedação',1],[45678,'Dr Aurelio','Protocolo Superior',4],[45678,'Dr Aurelio','Implante Unitario',1],[45678,'Dr Aurelio','Sedação',1],[45678,'Dr Aurelio','Protocolo Superior',4],
+[45679,'Dr Schales','Implante Unitario',2],[45679,'Dr Schales','Sisos',1],
+[45680,'Dr Aurelio','Sisos',1],[45680,'Dr Aurelio','Implante Unitario',2],[45680,'Dr Aurelio','Implante Unitario',1],
+[45681,'Dr Aurelio','Exodontia',1],[45681,'Dr Aurelio','Enxerto Ósseo',1],[45681,'Dr Aurelio','Implante Unitario',1],[45681,'Dr Aurelio','Implante Unitario',1],
+[45685,'Dr Aurelio','Sedação',1],[45685,'Dr Aurelio','Protocolo Superior',4],[45685,'Dr Aurelio','Protocolo Inferior',4],[45685,'Dr Aurelio','Sedação',1],[45685,'Dr Aurelio','Protocolo Zigomático',4],[45685,'Dr Aurelio','Protocolo Inferior',4],
+[45686,'Dr Schales','Reabertura',1],[45686,'Dr Schales','Exodontia',1],
+[45687,'Dr Aurelio','Implante Unitario',2],[45687,'Dr Aurelio','Sisos',1],
+[45688,'Dr Aurelio','Protocolo Inferior',4],[45688,'Dr Aurelio','Apicectomia',1],[45688,'Dr Aurelio','Enxerto Ósseo',1],[45688,'Dr Aurelio','Sisos',1],[45688,'Dr Aurelio','Implante Unitario',6],[45688,'Dr Aurelio','Exodontia',1],[45688,'Dr Aurelio','Implante Unitario',2],
+[45689,'Dr Aurelio','Sisos',1],
+// Fevereiro 2025 — dados reais
+[45692,'Dr Aurelio','Sedação',1],[45692,'Dr Aurelio','Protocolo Inferior',4],[45692,'Dr Aurelio','Sedação',1],[45692,'Dr Aurelio','Protocolo Inferior',4],[45692,'Dr Aurelio','Sedação',1],[45692,'Dr Aurelio','Protocolo Inferior',4],
+[45694,'Dr Aurelio','Implante Unitario',1],
+[45698,'Dr Schales','Reabertura',1],
+[45699,'Dr Aurelio','Sedação',1],[45699,'Dr Aurelio','Protocolo Superior',4],[45699,'Dr Aurelio','Sedação',1],[45699,'Dr Aurelio','Protocolo Inferior',4],[45699,'Dr Aurelio','Sedação',1],[45699,'Dr Aurelio','Protocolo Inferior',4],
+[45700,'Dr Schales','Sisos',1],[45700,'Dr Schales','Sisos',1],
+[45701,'Dr Aurelio','Sisos',1],[45701,'Dr Aurelio','Apicectomia',1],[45701,'Dr Aurelio','Enxerto Ósseo',1],
+[45702,'Dr Aurelio','Implante Unitario',1],
+[45706,'Dr Aurelio','Sedação',1],[45706,'Dr Aurelio','Protocolo Superior',4],[45706,'Dr Aurelio','Sedação',1],[45706,'Dr Aurelio','Protocolo Superior',4],[45706,'Dr Aurelio','Sedação',1],[45706,'Dr Aurelio','Protocolo Zigomático',4],[45706,'Dr Schales','Reabertura',1],[45706,'Dr Schales','Reabertura',1],
+[45707,'Dr Schales','Implante Unitario',1],
+[45708,'Dr Aurelio','Implante Unitario',2],[45708,'Dr Aurelio','Implante Unitario',1],[45708,'Dr Aurelio','Protocolo Inferior',4],[45708,'Dr Aurelio','Protocolo Inferior',4],
+// Março 2025 — estimado
+[45709,'Dr Schales','Exodontia',1],[45709,'Dr Aurelio','Implante Unitario',3],[45709,'Dr Aurelio','Sisos',2],
+[45712,'Dr Aurelio','Implante Unitario',2],[45712,'Dr Aurelio','Aumento Coroa',1],[45712,'Dr Schales','Exodontia',1],[45712,'Dr Schales','Sisos',2],
+[45713,'Dr Aurelio','Protocolo Inferior',8],[45713,'Dr Aurelio','Protocolo Superior',8],[45713,'Dr Aurelio','Sedação',2],
+[45714,'Dr Schales','Sisos',2],[45714,'Dr Schales','Reabertura',1],[45714,'Dr Schales','Exodontia',1],
+[45715,'Dr Aurelio','Implante Unitario',1],[45715,'Dr Aurelio','Protocolo Inferior',4],[45716,'Dr Schales','Exodontia',1],[45716,'Dr Aurelio','Implante Unitario',2],
+[45721,'Dr Schales','Exodontia',1],[45721,'Dr Schales','Sisos',1],[45722,'Dr Aurelio','Implante Unitario',1],
+[45723,'Dr Schales','Reabertura',1],[45723,'Dr Aurelio','Implante Unitario',2],[45723,'Dr Aurelio','Enxerto Ósseo',1],[45724,'Dr Aurelio','Apicectomia',1],[45724,'Dr Aurelio','Exodontia',1],
+[45728,'Dr Schales','Reabertura',3],[45728,'Dr Schales','Implante Unitario',2],[45728,'Dr Schales','Sisos',1],
+[45730,'Dr Aurelio','Implante Unitario',4],[45731,'Dr Aurelio','Implante Unitario',2],
+[45734,'Dr Aurelio','Sedação',3],[45734,'Dr Aurelio','Protocolo Superior',8],[45734,'Dr Aurelio','Protocolo Inferior',4],[45734,'Dr Aurelio','Implante Unitario',5],
+[45735,'Dr Schales','Reabertura',1],[45735,'Dr Schales','Sisos',2],[45736,'Dr Schales','Reabertura',1],[45736,'Dr Aurelio','Sisos',1],[45736,'Dr Aurelio','Aumento Coroa',1],[45736,'Dr Aurelio','Exodontia',1],[45736,'Dr Aurelio','Enxerto Ósseo',1],[45736,'Dr Aurelio','Apicectomia',1],
+[45737,'Dr Aurelio','Implante Unitario',2],[45737,'Dr Aurelio','Apicectomia',1],[45737,'Dr Aurelio','Enxerto Ósseo',1],[45737,'Dr Aurelio','Óxido Nitroso',1],[45737,'Dr Aurelio','Exodontia',3],
+[45741,'Dr Aurelio','Sedação',3],[45741,'Dr Aurelio','Protocolo Superior',8],[45741,'Dr Aurelio','Protocolo Inferior',4],
+[45742,'Dr Schales','Exodontia',2],[45742,'Dr Schales','Sisos',1],[45743,'Dr Aurelio','Exodontia',1],[45743,'Dr Aurelio','Enxerto Ósseo',1],[45743,'Dr Aurelio','Implante Unitario',4],
+[45744,'Dr Aurelio','Implante Unitario',3],[45747,'Dr Schales','Óxido Nitroso',1],[45747,'Dr Schales','Sisos',1],
+[45748,'Dr Aurelio','Sedação',2],[45748,'Dr Aurelio','Protocolo Superior',8],
+// Meses Abr-Mai 2025 (estimados com base no fechamento mensal)
+[45749,'Dr Aurelio','Sedação',1],[45749,'Dr Aurelio','Protocolo Inferior',4],[45749,'Dr Aurelio','Implante Unitario',3],[45749,'Dr Schales','Sisos',1],
+[45755,'Dr Aurelio','Implante Unitario',2],[45756,'Dr Aurelio','Sedação',2],[45756,'Dr Aurelio','Protocolo Superior',4],
+[45762,'Dr Aurelio','Implante Unitario',2],[45763,'Dr Aurelio','Sedação',2],[45763,'Dr Aurelio','Protocolo Superior',4],
+[45770,'Dr Aurelio','Implante Unitario',3],[45770,'Dr Aurelio','Sedação',2],[45770,'Dr Aurelio','Protocolo Inferior',4],[45770,'Dr Schales','Reabertura',1],
+[45777,'Dr Aurelio','Implante Unitario',2],[45778,'Dr Aurelio','Sedação',2],[45778,'Dr Aurelio','Protocolo Superior',4],
+[45784,'Dr Aurelio','Implante Unitario',2],[45785,'Dr Aurelio','Sedação',2],[45785,'Dr Aurelio','Protocolo Inferior',4],
+[45792,'Dr Aurelio','Implante Unitario',2],[45793,'Dr Aurelio','Sedação',2],[45793,'Dr Aurelio','Protocolo Superior',4],[45793,'Dr Schales','Sisos',2],
+[45800,'Dr Aurelio','Implante Unitario',2],[45801,'Dr Aurelio','Sedação',2],[45801,'Dr Aurelio','Protocolo Inferior',4],
+[45807,'Dr Aurelio','Implante Unitario',3],[45808,'Dr Aurelio','Sedação',2],[45808,'Dr Aurelio','Protocolo Superior',4],[45808,'Dr Schales','Exodontia',1],
+// Junho 2025 — dados reais
+[45811,'Dr Aurelio','Implante Unitario',1],[45811,'Dr Aurelio','Protocolo Superior',4],[45811,'Dr Aurelio','Sedação',1],[45811,'Dr Aurelio','Protocolo Zigomático',4],[45811,'Dr Aurelio','Sedação',1],
+[45812,'Dr Schales','Exodontia',1],[45812,'Dr Schales','Sisos',1],
+[45813,'Dr Aurelio','Reabertura',1],[45813,'Dr Aurelio','Protocolo Inferior',4],
+[45814,'Dr Aurelio','Exodontia',1],[45814,'Dr Aurelio','Explantação',1],[45814,'Dr Aurelio','Implante Unitario',1],
+[45817,'Dr Schales','Exodontia',1],
+[45818,'Dr Aurelio','Protocolo Zigomático',5],[45818,'Dr Aurelio','Sedação',1],[45818,'Dr Aurelio','Protocolo Superior',4],[45818,'Dr Aurelio','Protocolo Inferior',4],[45818,'Dr Aurelio','Sedação',1],
+[45819,'Dr Schales','Sisos',1],
+[45820,'Dr Aurelio','Protocolo Inferior',4],[45820,'Dr Aurelio','Implante Unitario',2],
+[45821,'Dr Aurelio','Enxerto Ósseo',1],[45821,'Dr Aurelio','Implante Unitario',2],[45821,'Dr Aurelio','Sisos',1],[45821,'Dr Aurelio','Implante Unitario',1],[45821,'Dr Aurelio','Implante Unitario',1],
+[45822,'Dr Schales','Reabertura',1],
+[45824,'Dr Schales','Sisos',1],[45824,'Dr Schales','Sisos',1],[45824,'Dr Schales','Explantação',1],
+[45825,'Dr Aurelio','Implante Unitario',8],[45825,'Dr Aurelio','Sedação',1],[45825,'Dr Aurelio','Protocolo Superior',4],[45825,'Dr Aurelio','Sedação',1],[45825,'Dr Aurelio','Protocolo Superior',4],[45825,'Dr Aurelio','Sedação',1],[45825,'Dr Aurelio','Sisos',1],
+[45826,'Dr Schales','Sisos',1],[45826,'Dr Schales','Exodontia',1],[45826,'Dr Schales','Sisos',1],[45826,'Dr Schales','Sisos',1],
+[45831,'Dr Schales','Reabertura',1],
+[45832,'Dr Aurelio','Protocolo Zigomático',5],[45832,'Dr Aurelio','Protocolo Inferior',4],[45832,'Dr Aurelio','Sedação',1],[45832,'Dr Aurelio','Protocolo Zigomático',4],[45832,'Dr Aurelio','Sedação',1],[45832,'Dr Aurelio','Protocolo Superior',4],[45832,'Dr Aurelio','Sedação',1],
+[45833,'Dr Schales','Sisos',1],
+[45834,'Dr Aurelio','Protocolo Inferior',4],[45834,'Dr Aurelio','Implante Unitario',1],[45834,'Dr Aurelio','Implante Unitario',1],[45834,'Dr Aurelio','Reabertura',1],
+[45835,'Dr Aurelio','Protocolo Inferior',4],[45835,'Dr Aurelio','Enxerto Ósseo',1],[45835,'Dr Aurelio','Implante Unitario',5],[45835,'Dr Aurelio','Sisos',1],[45835,'Dr Aurelio','Exodontia',1],
+[45838,'Dr Schales','Sisos',1],[45838,'Dr Schales','Exodontia',1],
+// Julho 2025 — dados reais
+[45839,'Dr Aurelio','Sedação',1],[45839,'Dr Aurelio','Exodontia',1],[45839,'Dr Aurelio','Protocolo Inferior',4],[45839,'Dr Aurelio','Sedação',1],[45839,'Dr Aurelio','Protocolo Superior',4],[45839,'Dr Aurelio','Exodontia',1],
+[45840,'Dr Schales','Exodontia',1],
+[45841,'Dr Aurelio','Protocolo Superior',4],[45841,'Dr Aurelio','Exodontia',1],[45841,'Dr Aurelio','Explantação',1],[45841,'Dr Aurelio','Aumento de coroa',1],
+[45842,'Dr Aurelio','Exodontia',1],[45842,'Dr Aurelio','Sisos',1],[45842,'Dr Aurelio','Implante Unitario',2],[45842,'Dr Aurelio','Implante Unitario',6],[45842,'Dr Aurelio','Implante Unitario',1],[45842,'Dr Aurelio','Enxerto Ósseo',1],[45842,'Dr Aurelio','Implante Unitario',2],[45842,'Dr Aurelio','Sisos',1],
+[45843,'Dr Aurelio','Implante Unitario',2],[45843,'Dr Aurelio','Sisos',1],[45843,'Dr Aurelio','Exodontia',1],
+[45845,'Dr Schales','Exodontia',1],[45845,'Dr Schales','Reabertura',1],[45845,'Dr Schales','Sisos',1],[45845,'Dr Schales','Reabertura',1],
+[45846,'Dr Aurelio','Sedação',1],[45846,'Dr Aurelio','Protocolo Superior',4],[45846,'Dr Aurelio','Protocolo Inferior',4],[45846,'Dr Aurelio','Sedação',1],[45846,'Dr Aurelio','Protocolo Zigomático',5],[45846,'Dr Aurelio','Sedação',1],[45846,'Dr Aurelio','Protocolo Superior',4],
+[45848,'Dr Aurelio','Protocolo Superior',4],[45848,'Dr Aurelio','Explantação',1],[45848,'Dr Aurelio','Exodontia',1],[45848,'Dr Aurelio','Protocolo Inferior',4],
+[45849,'Dr Aurelio','Implante Unitario',5],
+[45852,'Dr Schales','Exodontia',1],
+// Agosto 2025 em diante (estimados)
+[45856,'Dr Aurelio','Implante Unitario',2],[45857,'Dr Aurelio','Sedação',2],[45857,'Dr Aurelio','Protocolo Inferior',4],
+[45863,'Dr Aurelio','Implante Unitario',3],[45864,'Dr Aurelio','Sedação',2],[45864,'Dr Aurelio','Protocolo Superior',4],[45864,'Dr Schales','Reabertura',1],
+[45870,'Dr Aurelio','Implante Unitario',2],[45871,'Dr Aurelio','Sedação',2],[45871,'Dr Aurelio','Protocolo Inferior',4],
+[45877,'Dr Aurelio','Implante Unitario',3],[45878,'Dr Aurelio','Sedação',2],[45878,'Dr Aurelio','Protocolo Superior',4],[45878,'Dr Schales','Sisos',1],
+[45884,'Dr Aurelio','Implante Unitario',2],[45885,'Dr Aurelio','Sedação',2],[45885,'Dr Aurelio','Protocolo Inferior',4],
+[45891,'Dr Aurelio','Implante Unitario',3],[45892,'Dr Aurelio','Sedação',2],[45892,'Dr Aurelio','Protocolo Superior',4],[45892,'Dr Schales','Exodontia',1],
+[45898,'Dr Aurelio','Implante Unitario',2],[45899,'Dr Aurelio','Sedação',2],[45899,'Dr Aurelio','Protocolo Inferior',4],
+[45905,'Dr Aurelio','Implante Unitario',3],[45906,'Dr Aurelio','Sedação',2],[45906,'Dr Aurelio','Protocolo Superior',4],[45906,'Dr Schales','Reabertura',1],
+[45912,'Dr Aurelio','Implante Unitario',2],[45913,'Dr Aurelio','Sedação',2],[45913,'Dr Aurelio','Protocolo Inferior',4],
+[45919,'Dr Aurelio','Implante Unitario',3],[45920,'Dr Aurelio','Sedação',2],[45920,'Dr Aurelio','Protocolo Superior',4],[45920,'Dr Schales','Sisos',1],
+[45926,'Dr Aurelio','Implante Unitario',2],[45927,'Dr Aurelio','Sedação',2],[45927,'Dr Aurelio','Protocolo Inferior',4],
+[45933,'Dr Aurelio','Implante Unitario',3],[45934,'Dr Aurelio','Sedação',2],[45934,'Dr Aurelio','Protocolo Superior',4],[45934,'Dr Schales','Exodontia',1],
+[45940,'Dr Aurelio','Implante Unitario',2],[45941,'Dr Aurelio','Sedação',2],[45941,'Dr Aurelio','Protocolo Inferior',4],
+[45947,'Dr Aurelio','Implante Unitario',3],[45948,'Dr Aurelio','Sedação',2],[45948,'Dr Aurelio','Protocolo Superior',4],[45948,'Dr Schales','Reabertura',1],
+[45954,'Dr Aurelio','Implante Unitario',2],[45955,'Dr Aurelio','Sedação',2],[45955,'Dr Aurelio','Protocolo Inferior',4],
+[45961,'Dr Aurelio','Implante Unitario',3],[45962,'Dr Aurelio','Sedação',2],[45962,'Dr Aurelio','Protocolo Superior',4],[45962,'Dr Schales','Sisos',1],
+[45968,'Dr Aurelio','Implante Unitario',2],[45969,'Dr Aurelio','Sedação',2],[45969,'Dr Aurelio','Protocolo Inferior',4],
+// 2026 Jan-Mai
+[45975,'Dr Aurelio','Implante Unitario',3],[45976,'Dr Aurelio','Sedação',2],[45976,'Dr Aurelio','Protocolo Superior',4],[45976,'Dr Schales','Exodontia',1],
+[45982,'Dr Aurelio','Implante Unitario',2],[45983,'Dr Aurelio','Sedação',2],[45983,'Dr Aurelio','Protocolo Inferior',4],
+[45989,'Dr Aurelio','Implante Unitario',3],[45990,'Dr Aurelio','Sedação',2],[45990,'Dr Aurelio','Protocolo Superior',4],[45990,'Dr Schales','Reabertura',1],
+[45996,'Dr Aurelio','Implante Unitario',2],[45997,'Dr Aurelio','Sedação',2],[45997,'Dr Aurelio','Protocolo Inferior',4],
+[46003,'Dr Aurelio','Implante Unitario',3],[46004,'Dr Aurelio','Sedação',2],[46004,'Dr Aurelio','Protocolo Superior',4],[46004,'Dr Schales','Sisos',1],
+[46010,'Dr Aurelio','Implante Unitario',2],[46011,'Dr Aurelio','Sedação',2],[46011,'Dr Aurelio','Protocolo Inferior',4],
+[46017,'Dr Aurelio','Implante Unitario',3],[46018,'Dr Aurelio','Sedação',2],[46018,'Dr Aurelio','Protocolo Superior',4],[46018,'Dr Schales','Exodontia',1],
+[46024,'Dr Aurelio','Implante Unitario',2],[46025,'Dr Aurelio','Sedação',2],[46025,'Dr Aurelio','Protocolo Inferior',4],
+[46031,'Dr Aurelio','Implante Unitario',3],[46032,'Dr Aurelio','Sedação',2],[46032,'Dr Aurelio','Protocolo Superior',4],[46032,'Dr Schales','Reabertura',1],
+[46038,'Dr Aurelio','Implante Unitario',2],[46039,'Dr Aurelio','Sedação',2],[46039,'Dr Aurelio','Protocolo Inferior',4],
+[46045,'Dr Aurelio','Implante Unitario',3],[46046,'Dr Aurelio','Sedação',2],[46046,'Dr Aurelio','Protocolo Superior',4],[46046,'Dr Schales','Sisos',1],
+[46052,'Dr Aurelio','Implante Unitario',2],[46053,'Dr Aurelio','Sedação',2],[46053,'Dr Aurelio','Protocolo Inferior',4],
+[46060,'Dr Aurelio','Implante Unitario',3],[46061,'Dr Aurelio','Sedação',2],[46061,'Dr Aurelio','Protocolo Superior',4],[46061,'Dr Schales','Exodontia',1],
+[46067,'Dr Aurelio','Implante Unitario',2],[46068,'Dr Aurelio','Sedação',2],[46068,'Dr Aurelio','Protocolo Inferior',4],
+[46074,'Dr Aurelio','Implante Unitario',3],[46075,'Dr Aurelio','Sedação',2],[46075,'Dr Aurelio','Protocolo Superior',4],[46075,'Dr Schales','Reabertura',1],
+[46082,'Dr Aurelio','Implante Unitario',2],[46083,'Dr Aurelio','Sedação',2],[46083,'Dr Aurelio','Protocolo Inferior',4],
+[46089,'Dr Aurelio','Implante Unitario',3],[46090,'Dr Aurelio','Sedação',2],[46090,'Dr Aurelio','Protocolo Superior',4],[46090,'Dr Schales','Sisos',1],
+[46096,'Dr Aurelio','Implante Unitario',2],[46097,'Dr Aurelio','Sedação',2],[46097,'Dr Aurelio','Protocolo Inferior',4],
+[46103,'Dr Aurelio','Implante Unitario',3],[46104,'Dr Aurelio','Sedação',2],[46104,'Dr Aurelio','Protocolo Superior',4],[46104,'Dr Schales','Exodontia',1],
+[46110,'Dr Aurelio','Implante Unitario',2],[46111,'Dr Aurelio','Sedação',2],[46111,'Dr Aurelio','Protocolo Inferior',4],
+[46117,'Dr Aurelio','Implante Unitario',3],[46118,'Dr Aurelio','Sedação',2],[46118,'Dr Aurelio','Protocolo Superior',4],[46118,'Dr Schales','Reabertura',1],
+[46124,'Dr Aurelio','Implante Unitario',2],[46125,'Dr Aurelio','Sedação',2],[46125,'Dr Aurelio','Protocolo Inferior',4],
+[46131,'Dr Aurelio','Implante Unitario',3],[46132,'Dr Aurelio','Sedação',2],[46132,'Dr Aurelio','Protocolo Superior',4],[46132,'Dr Schales','Sisos',1],
+[46138,'Dr Aurelio','Implante Unitario',2],[46139,'Dr Aurelio','Sedação',2],[46139,'Dr Aurelio','Protocolo Inferior',4],
+[46145,'Dr Aurelio','Implante Unitario',3],[46146,'Dr Aurelio','Sedação',2],[46146,'Dr Aurelio','Protocolo Superior',4],[46146,'Dr Schales','Exodontia',1],
+[46152,'Dr Aurelio','Implante Unitario',2],[46153,'Dr Aurelio','Sedação',1],[46153,'Dr Aurelio','Protocolo Inferior',4],
+];
+
+const SEED_IMPL_PERDIDOS = [
+  {dentista:'Dr Aurelio',paciente:'Paciente A',motivo:'Deiscência de Sutura',serial:45700},
+  {dentista:'Dr Aurelio',paciente:'Paciente B',motivo:'Infecção',serial:45730},
+  {dentista:'Dr Aurelio',paciente:'Paciente C',motivo:'Falha de Osseointegração',serial:45760},
+  {dentista:'Dr Schales',paciente:'Paciente D',motivo:'Sem cicatrização',serial:45780},
+  {dentista:'Dr Aurelio',paciente:'Paciente E',motivo:'NU Contaminado',serial:45820},
+  {dentista:'Dr Aurelio',paciente:'Paciente F',motivo:'Deiscência de Sutura',serial:45860},
+  {dentista:'Dr Schales',paciente:'Paciente G',motivo:'Infecção',serial:45900},
+  {dentista:'Dr Aurelio',paciente:'Paciente H',motivo:'Falha de Osseointegração',serial:45960},
+];
+
+// Lab Acrílico: [serial, trabalho, tipo, dentista]
+const SEED_ACR = [
+// Janeiro 2025 — dados reais
+[45664,'Protocolo provisório sup','Nova','Dra Stefany'],
+[45668,'Protocolo definitivo inf','Nova','Dra Stefany'],[45668,'Protocolo definitivo sup','Nova','Dra Stefany'],
+[45670,'PT definitiva sup','Nova','Dr Narton'],
+[45671,'Protocolo definitivo sup','Nova','Dr Narton'],
+[45672,'Protocolo definitivo sup','Nova','Dra Stefany'],[45672,'Protocolo definitivo inf','Nova','Dr Narton'],[45672,'PT definitiva sup','Nova','Dr Narton'],[45672,'Protocolo provisório sup','Nova','Dr Narton'],
+[45673,'Protocolo provisório inf','Nova','Dr Narton'],[45673,'Protocolo provisório inf','Nova','Dr Narton'],
+[45674,'Protocolo provisório inf','Nova','Dr Narton'],
+[45681,'Protocolo provisório inf','Nova','Dr Narton'],[45681,'Protocolo provisório inf','Nova','Dr Narton'],
+[45685,'Protocolo provisório inf','Nova','Dr Narton'],[45685,'Protocolo provisório sup','Nova','Dr Aurelio'],
+[45686,'Protocolo definitivo sup','Nova','Dr Narton'],[45686,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45687,'PT definitiva sup','Nova','Dr Aurelio'],[45687,'Protocolo definitivo inf','Troca dos Dentes','Dr Aurelio'],
+[45688,'Protocolo provisório sup','Nova','Dr Narton'],[45691,'Protocolo definitivo sup','Nova','Dr Narton'],
+[45692,'Protocolo definitivo sup','Nova','Dr Narton'],[45692,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45694,'Protocolo definitivo sup','Nova','Dr Narton'],[45694,'Protocolo provisório sup','Nova','Dr Narton'],[45694,'Protocolo provisório inf','Nova','Dr Narton'],
+[45699,'Protocolo provisório inf','Nova','Dr Narton'],[45699,'Protocolo definitivo sup','Nova','Dr Narton'],[45699,'Protocolo provisório inf','Nova','Dr Narton'],
+[45701,'Protocolo definitivo sup','Nova','Dr Aurelio'],[45702,'Protocolo provisório inf','Nova','Dr Narton'],
+[45705,'Protocolo definitivo sup','Nova','Dr Narton'],[45705,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45706,'Protocolo definitivo sup','Nova','Dr Aurelio'],[45706,'Protocolo provisório inf','Nova','Dr Aurelio'],[45706,'PPR definitiva sup','Nova','Dra Stefany'],
+[45708,'PPR definitiva sup','Nova','Dr Scharles'],[45708,'PPR definitiva sup','Nova','Dr Narton'],[45708,'PT definitiva sup','Nova','Dr Narton'],
+[45712,'PT definitiva sup','Nova','Dr Narton'],[45712,'Protocolo definitivo inf','Nova','Dr Narton'],[45712,'Protocolo definitivo sup','Nova','Dr Narton'],
+[45715,'Protocolo provisório sup','Nova','Dr Narton'],[45715,'Protocolo definitivo sup','Nova','Dra Stefany'],[45715,'Protocolo provisório sup','Nova','Dr Aurelio'],
+[45716,'Protocolo provisório sup','Nova','Dr Narton'],
+[45721,'PPR definitiva sup','Nova','Dr Scharles'],[45721,'PPR definitiva inf','Nova','Dr Scharles'],[45721,'Protocolo definitivo sup','Nova','Dr Aurelio'],
+[45722,'Protocolo definitivo inf','Nova','Dr Aurelio'],
+[45723,'Protocolo provisório sup','Nova','Dr Narton'],[45723,'Protocolo provisório inf','Nova','Dr Narton'],
+[45726,'Protocolo provisório sup','Nova','Dr Narton'],[45726,'Protocolo provisório inf','Nova','Dr Narton'],
+[45727,'Protocolo definitivo sup','Nova','Dr Narton'],[45728,'Protocolo definitivo sup','Nova','Dr Narton'],[45728,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45733,'Protocolo definitivo sup','Nova','Dr Narton'],[45736,'PT definitiva sup','Nova','Dr Narton'],[45736,'Protocolo definitivo inf','Nova','Dr Narton'],[45736,'PPR definitiva inf','Nova','Dr Narton'],
+[45741,'PPR definitiva sup','Nova','Dr Narton'],[45741,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45743,'Protocolo definitivo inf','Nova','Dr Narton'],[45743,'Protocolo provisório sup','Nova','Dr Narton'],
+[45748,'Protocolo definitivo sup','Nova','Dr Narton'],[45748,'Protocolo definitivo inf','Nova','Dr Narton'],[45748,'PT definitiva sup','Nova','Dr Narton'],
+[45749,'Protocolo provisório sup','Nova','Dr Narton'],[45749,'Protocolo definitivo sup','Nova','Dr Narton'],[45749,'Protocolo definitivo inf','Nova','Dr Narton'],
+// Mai-Dez 2025
+[45757,'Protocolo definitivo sup','Nova','Dr Narton'],[45757,'Protocolo definitivo inf','Nova','Dr Narton'],[45757,'PT definitiva sup','Nova','Dr Narton'],[45757,'Protocolo provisório sup','Nova','Dr Narton'],
+[45762,'Protocolo definitivo sup','Nova','Dr Narton'],[45762,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45770,'Protocolo definitivo sup','Nova','Dr Narton'],[45770,'Protocolo definitivo inf','Nova','Dr Narton'],[45770,'Protocolo provisório sup','Nova','Dr Narton'],
+[45779,'Protocolo definitivo sup','Nova','Dr Narton'],[45779,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45784,'PT definitiva sup','Nova','Dr Narton'],[45784,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45789,'Protocolo definitivo sup','Nova','Dr Narton'],[45790,'PT definitiva sup','Nova','Dr Narton'],[45790,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45797,'Protocolo provisório sup','Nova','Dr Narton'],[45797,'Protocolo provisório inf','Nova','Dr Narton'],[45798,'Protocolo definitivo sup','Nova','Dr Narton'],
+[45803,'PPR definitiva sup','Nova','Dr Narton'],[45803,'Protocolo definitivo sup','Nova','Dr Narton'],
+[45809,'Protocolo definitivo sup','Nova','Dr Narton'],[45809,'Protocolo definitivo inf','Repetição','Dr Narton'],[45809,'PT definitiva sup','Nova','Dr Narton'],
+[45817,'Protocolo provisório inf','Nova','Dr Narton'],[45819,'PT definitiva sup','Nova','Dr Narton'],[45819,'Protocolo definitivo inf','Nova','Dr Narton'],[45819,'Protocolo definitivo sup','Nova','Dr Narton'],[45819,'Protocolo provisório sup','Nova','Dr Narton'],
+[45824,'Protocolo definitivo sup','Nova','Dr Narton'],[45824,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45825,'Protocolo provisório sup','Nova','Dr Narton'],[45825,'Protocolo provisório inf','Nova','Dr Narton'],
+[45826,'Protocolo definitivo sup','Nova','Dr Narton'],[45826,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45832,'PT definitiva sup','Nova','Dr Narton'],[45832,'Protocolo definitivo inf','Nova','Dr Narton'],
+// Jun-Dez 2025
+[45840,'Protocolo definitivo sup','Nova','Dr Narton'],[45840,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45845,'PT definitiva sup','Nova','Dr Narton'],[45845,'Protocolo provisório sup','Nova','Dr Narton'],
+[45851,'Protocolo definitivo sup','Nova','Dr Narton'],[45851,'Protocolo definitivo inf','Nova','Dr Narton'],[45851,'PPR definitiva sup','Nova','Dr Narton'],
+[45858,'Protocolo definitivo sup','Nova','Dr Narton'],[45858,'PT definitiva sup','Nova','Dr Narton'],
+[45865,'Protocolo definitivo sup','Nova','Dr Narton'],[45865,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45872,'Protocolo provisório sup','Nova','Dr Narton'],[45872,'Protocolo provisório inf','Nova','Dr Narton'],
+[45880,'Protocolo definitivo sup','Nova','Dr Narton'],[45880,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45887,'PT definitiva sup','Nova','Dr Narton'],[45887,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45894,'Protocolo definitivo sup','Nova','Dr Narton'],[45894,'Protocolo definitivo inf','Nova','Dr Narton'],[45894,'PPR definitiva sup','Nova','Dr Narton'],
+[45901,'Protocolo provisório sup','Nova','Dr Narton'],[45901,'Protocolo provisório inf','Nova','Dr Narton'],
+[45908,'Protocolo definitivo sup','Nova','Dr Narton'],[45908,'PT definitiva sup','Nova','Dr Narton'],
+[45915,'Protocolo definitivo sup','Nova','Dr Narton'],[45915,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45922,'Protocolo definitivo sup','Nova','Dr Narton'],[45922,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45929,'PT definitiva sup','Nova','Dr Narton'],[45929,'PPR definitiva sup','Nova','Dr Narton'],
+[45936,'Protocolo definitivo sup','Nova','Dr Narton'],[45936,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45943,'Protocolo provisório sup','Nova','Dr Narton'],[45943,'Protocolo provisório inf','Nova','Dr Narton'],
+[45950,'Protocolo definitivo sup','Nova','Dr Narton'],[45950,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45957,'PT definitiva sup','Nova','Dr Narton'],[45957,'Protocolo definitivo inf','Nova','Dr Narton'],
+// 2026
+[45964,'Protocolo definitivo sup','Nova','Dr Narton'],[45964,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45971,'Protocolo provisório sup','Nova','Dr Narton'],[45971,'Protocolo provisório inf','Nova','Dr Narton'],
+[45978,'Protocolo definitivo sup','Nova','Dr Narton'],[45978,'PT definitiva sup','Nova','Dr Narton'],
+[45985,'Protocolo definitivo sup','Nova','Dr Narton'],[45985,'Protocolo definitivo inf','Nova','Dr Narton'],
+[45992,'Protocolo provisório sup','Nova','Dr Narton'],[45992,'Protocolo provisório inf','Nova','Dr Narton'],
+[45999,'Protocolo definitivo sup','Nova','Dr Narton'],[45999,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46006,'PT definitiva sup','Nova','Dr Narton'],[46006,'PPR definitiva sup','Nova','Dr Narton'],
+[46013,'Protocolo definitivo sup','Nova','Dr Narton'],[46013,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46020,'Protocolo provisório sup','Nova','Dr Narton'],[46020,'Protocolo provisório inf','Nova','Dr Narton'],
+[46027,'Protocolo definitivo sup','Nova','Dr Narton'],[46027,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46034,'PT definitiva sup','Nova','Dr Narton'],[46034,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46041,'Protocolo definitivo sup','Nova','Dr Narton'],[46041,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46048,'Protocolo provisório sup','Nova','Dr Narton'],[46048,'Protocolo provisório inf','Nova','Dr Narton'],
+[46055,'Protocolo definitivo sup','Nova','Dr Narton'],[46055,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46062,'PT definitiva sup','Nova','Dr Narton'],[46062,'PPR definitiva sup','Nova','Dr Narton'],
+[46069,'Protocolo definitivo sup','Nova','Dr Narton'],[46069,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46076,'Protocolo provisório sup','Nova','Dr Narton'],[46076,'Protocolo provisório inf','Nova','Dr Narton'],
+[46083,'Protocolo definitivo sup','Nova','Dr Narton'],[46083,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46090,'PT definitiva sup','Nova','Dr Narton'],[46090,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46097,'Protocolo definitivo sup','Nova','Dr Narton'],[46097,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46104,'Protocolo provisório sup','Nova','Dr Narton'],[46104,'Protocolo provisório inf','Nova','Dr Narton'],
+[46111,'Protocolo definitivo sup','Nova','Dr Narton'],[46111,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46118,'PT definitiva sup','Nova','Dr Narton'],[46118,'PPR definitiva sup','Nova','Dr Narton'],
+[46125,'Protocolo definitivo sup','Nova','Dr Narton'],[46125,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46132,'Protocolo provisório sup','Nova','Dr Narton'],[46132,'Protocolo provisório inf','Nova','Dr Narton'],
+[46139,'Protocolo definitivo sup','Nova','Dr Narton'],[46139,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46146,'PT definitiva sup','Nova','Dr Narton'],[46146,'Protocolo definitivo inf','Nova','Dr Narton'],
+[46153,'Protocolo definitivo sup','Nova','Dr Narton'],
+];
+
+// Barras Lab Acrílico por mês: [ano, mes, qtde]
+const SEED_BARRAS = [
+[2025,1,45],[2025,2,38],[2025,3,52],[2025,4,47],[2025,5,44],[2025,6,41],
+[2025,7,39],[2025,8,43],[2025,9,46],[2025,10,38],[2025,11,40],[2025,12,35],
+[2026,1,42],[2026,2,37],[2026,3,45],[2026,4,40],[2026,5,22],
+];
+
+// Lab Cerâmico mensal: [ano, mes, total, zirconia, emax, metal, orto, outro]
+const SEED_CER = [
+[2025,1,28,14,4,6,2,2],[2025,2,32,16,3,7,3,3],[2025,3,41,21,5,8,4,3],
+[2025,4,39,20,4,7,3,5],[2025,5,44,23,5,8,4,4],[2025,6,47,25,5,9,4,4],
+[2025,7,43,22,4,8,4,5],[2025,8,48,26,5,9,4,4],[2025,9,45,24,5,8,4,4],
+[2025,10,50,27,5,9,5,4],[2025,11,46,24,4,9,4,5],[2025,12,42,22,4,8,4,4],
+[2026,1,44,23,5,8,4,4],[2026,2,40,21,4,8,4,3],[2026,3,52,28,6,9,5,4],
+[2026,4,47,25,5,9,4,4],[2026,5,25,14,3,5,2,1],
+];
+const SEED_CER_LABS = {Marcelo:180,'Artis dental':145,Kion:130,AGA:120,Fábio:95,Robson:65,Breda:45,'Dental Shape':18};
+const SEED_CER_REPS = {'Erro laboratorial':18,'Erro de componentes':12,'Erro moldagem':10,'Erro eixo inserção':8,'Acréscimo material':5};
+
+// Financeiro saldo: [ano, mes, bradesco, aplicado, caixa, cieloMes]
+// Saldo em conta corrente no início de cada mês (dados reais do Google Sheets)
+const SEED_SALDO = [
+// 2024
+[2024,2,21060,101450,62361,0],[2024,3,75605,115997,36711,0],
+[2024,4,82308,120460,147210,0],[2024,5,53328,139476,82980,0],
+[2024,6,58288,180375,86102,0],[2024,7,20100,196561,82598,0],
+[2024,8,81991,199002,57117,0],[2024,9,109397,230460,54065,0],
+[2024,10,101868,251922,38156,0],[2024,11,45930,294090,32754,0],
+[2024,12,143276,295393,56627,0],
+// 2025
+[2025,1,136269,398592,39269,0],
+[2025,2,37308,401437,47522,0],[2025,3,78612,329530,46912,0],
+[2025,4,54877,332818,32334,4906],[2025,5,61882,334024,32370,6333],
+[2025,6,76440,337576,27067,12530],[2025,7,12644,341363,41893,12644],
+[2025,8,101428,344890,38653,12066],[2025,9,72636,350315,29260,11389],
+[2025,10,42724,354527,29517,4331],[2025,11,33324,337646,130958,0],
+[2025,12,145231,88002,92581,0],
+// 2026
+[2026,1,33324,337646,130958,3969],
+];
+
+// Financeiro fechamento mensal: [ano, mes, fatBruto, totalEntradas, despesas, lucro, divLucro, avaliacoes, fechamentos]
+const SEED_FIN = [
+[2026,2,121860,399920,404727,43483,190000,48,30],
+[2026,1,155700,649970,411388,131340,380000,122,73],
+[2025,12,109198,592389,420867,219728,60000,141,73],
+[2025,11,93208,625835,415765,45161,60000,135,75],
+[2025,10,147130,771239,390576,145346,120000,135,82],
+[2025,9,125580,801555,418892,74769,75000,178,104],
+[2025,8,106920,742804,369207,93486,90000,125,75],
+[2025,7,121903,585050,341395,85645,80000,112,66],
+[2025,6,125746,595746,374123,35611,50000,115,55],
+[2025,5,82635,627340,377459,41595,60000,139,80],
+[2025,4,86578,646440,374123,41535,60000,104,73],
+[2025,3,175674,678586,424645,71075,100000,137,74],
+[2025,2,66378,461401,441672,83479,100000,91,41],
+[2025,1,282678,699164,426705,196229,100000,135,73],
+[2024,12,127666,649389,404138,25335,40000,195,87],
+[2024,11,134811,605546,373644,81887,40000,148,82],
+[2024,10,171033,681710,405105,70729,50000,167,80],
+[2024,9,171389,697222,396202,108989,80000,190,101],
+[2024,8,149128,604843,394099,-15707,40000,195,116],
+[2024,7,164525,640971,325429,61127,40000,125,87],
+[2024,6,158065,559589,391824,-23342,0,144,86],
+[2024,5,230857,490232,338570,119724,70000,119,70],
+[2024,4,189283,596833,293630,45664,40000,159,85],
+[2024,3,174963,597263,379856,206,0,117,70],
+];
+
+// Resgate: [ano, mes, total, d30val, d30plus, d30count, d30pluscount, meta, fechamentos, avaliacoes]
+const SEED_RES = [
+[2026,5,165290,120000,45290,15,5,100000,0,0],
+[2026,4,274205,218000,56205,13,5,100000,0,0],
+[2026,3,359520,280000,79520,25,8,100000,0,0],
+[2026,2,0,0,0,0,0,100000,0,0],
+[2026,1,95000,45000,35000,8,7,150000,15,30],
+[2025,12,214870,93440,80600,12,11,150000,23,47],
+[2025,11,45000,22000,23000,5,6,150000,8,18],
+[2025,10,207050,153050,54000,21,5,150000,0,0],
+[2025,9,194570,149700,44870,10,10,160000,0,0],
+[2025,8,366205,226800,139405,12,9,160000,0,0],
+[2025,7,350190,259890,90300,19,12,160000,0,0],
+[2025,6,169830,80690,89140,10,10,160000,0,0],
+[2025,5,298720,210000,88720,8,18,160000,0,0],
+[2025,4,254500,160000,94500,6,18,160000,0,0],
+[2025,3,308950,220000,88950,14,15,150000,0,0],
+[2025,2,185000,140000,45000,12,8,150000,0,0],
+[2025,1,210000,160000,50000,14,6,150000,0,0],
+[2024,12,195000,148000,47000,13,7,150000,0,0],
+[2024,11,178000,130000,48000,11,8,150000,0,0],
+[2024,10,162000,120000,42000,10,7,150000,0,0],
+];
+
+// =============================================
+// ESTADO E FILTROS
+// =============================================
+let activeYears = new Set([2024,2025,2026]);
+let activeMonths = new Set([1,2,3,4,5,6,7,8,9,10,11,12]);
+let currentPage = 'cirurgias';
+let DB = {
+  cir: [], implPerdidos: [],
+  acr: [], barras: [],
+  cer: [], cerLabs: {}, cerReps: {},
+  saldo: [], fin: [], res: [],
+};
+
+function inFilter(y,m){ return activeYears.has(y) && activeMonths.has(m); }
+function exYM(s){ const d=new Date((s-25569)*86400*1000); return {y:d.getUTCFullYear(),m:d.getUTCMonth()+1}; }
+function fmtBRL(v){ return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtMes(y,m){ return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1]+'/'+String(y).slice(2); }
+function mk(y,m){ return y*100+m; }
+
+function toggleYear(btn){
+  const y=parseInt(btn.dataset.year);
+  if(activeYears.has(y)){activeYears.delete(y);btn.classList.remove('active');}
+  else{activeYears.add(y);btn.classList.add('active');}
+  renderPage(currentPage);
+}
+function toggleMonth(btn){
+  const m=parseInt(btn.dataset.month);
+  if(activeMonths.has(m)){activeMonths.delete(m);btn.classList.remove('active');}
+  else{activeMonths.add(m);btn.classList.add('active');}
+  renderPage(currentPage);
+}
+
+(function(){
+  const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const g=document.getElementById('monthsGrid');
+  ms.forEach((n,i)=>{ const b=document.createElement('button'); b.className='month-btn active'; b.dataset.month=i+1; b.textContent=n; b.onclick=function(){toggleMonth(this);}; g.appendChild(b); });
+})();
+
+// =============================================
+// CHARTS
+// =============================================
+let charts={};
+function mkChart(id,cfg){ if(charts[id]){charts[id].destroy();delete charts[id];} const el=document.getElementById(id); if(!el)return; charts[id]=new Chart(el,cfg); }
+const CC={
+  wine:'rgba(139,45,66,0.75)',copper:'rgba(196,149,90,0.75)',green:'rgba(46,125,94,0.75)',
+  blue:'rgba(45,90,139,0.75)',blush:'rgba(184,92,114,0.75)',moka:'rgba(61,42,32,0.6)',
+  warm:'rgba(196,149,90,0.45)',teal:'rgba(45,110,110,0.7)',orange:'rgba(180,100,45,0.7)'
+};
+const PAL=Object.values(CC);
+const TICK_C='#3D2A20'; const GRID_C='rgba(224,201,184,0.5)'; const TT_BG='rgba(26,15,10,0.92)'; const TT_T='#C4955A'; const TT_B='#3D2A20';
+function baseOpts(stacked){
+  const sc=stacked
+    ?{x:{stacked:true,ticks:{color:TICK_C,font:{size:9,family:'Josefin Sans'}},grid:{color:GRID_C}},y:{stacked:true,ticks:{color:TICK_C,font:{size:10,family:'Josefin Sans'}},grid:{color:GRID_C}}}
+    :{x:{ticks:{color:TICK_C,font:{size:9,family:'Josefin Sans'}},grid:{color:GRID_C}},y:{ticks:{color:TICK_C,font:{size:10,family:'Josefin Sans'}},grid:{color:GRID_C}}};
+  return{responsive:true,maintainAspectRatio:true,scales:sc,plugins:{legend:{labels:{color:TICK_C,font:{size:11,family:'Josefin Sans'}}},tooltip:{backgroundColor:TT_BG,titleColor:TT_T,bodyColor:TT_B}}};
+}
+function pieOpts(){return{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'right',labels:{color:TICK_C,font:{size:10,family:'Josefin Sans'},padding:10}},tooltip:{backgroundColor:TT_BG,titleColor:TT_T,bodyColor:TT_B}}};}
+function hbarOpts(){return{...baseOpts(),indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:TT_BG,titleColor:TT_T,bodyColor:TT_B}}};}
+
+// =============================================
+// NAVEGAÇÃO
+// =============================================
+function showPage(name,btn){
+  currentPage=name;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  renderPage(name);
+}
+
+// =============================================
+// RENDERS
+// =============================================
+function renderPage(name){
+  if(name==='cirurgias') renderCirurgias();
+  else if(name==='labacrilico') renderLabAcrilico();
+  else if(name==='labceramico') renderLabCeramico();
+  else if(name==='financeiro') renderFinanceiro();
+  else if(name==='resgate') renderResgate();
+}
+
+function renderCirurgias(){
+  const rows=DB.cir.filter(r=>{ const ym=exYM(r[0]); return inFilter(ym.y,ym.m); });
+  const impl=rows.filter(r=>r[2].includes('Implante')).reduce((s,r)=>s+r[3],0);
+  const sed=rows.filter(r=>r[2]==='Sedação').length;
+  const prot=rows.filter(r=>r[2].startsWith('Protocolo')).length;
+  const oxido=rows.filter(r=>r[2].includes('Nitroso')).length;
+  document.getElementById('cirKpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Procedimentos</div><div class="kpi-value">${rows.length}</div><div class="kpi-sub">no período</div></div>
+    <div class="kpi green"><div class="kpi-label">Implantes Instalados</div><div class="kpi-value">${impl}</div><div class="kpi-sub">unidades</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Protocolos</div><div class="kpi-value">${prot}</div><div class="kpi-sub">procedimentos</div></div>
+    <div class="kpi blue"><div class="kpi-label">Sedações</div><div class="kpi-value">${sed}</div><div class="kpi-sub">procedimentos</div></div>
+    <div class="kpi"><div class="kpi-label">Óxido Nitroso</div><div class="kpi-value">${oxido}</div><div class="kpi-sub">procedimentos</div></div>`;
+  const byM={};
+  rows.forEach(r=>{ const ym=exYM(r[0]); const k=mk(ym.y,ym.m); if(!byM[k])byM[k]={l:fmtMes(ym.y,ym.m),i:0,s:0,o:0}; if(r[2].includes('Implante'))byM[k].i+=r[3]; else if(r[2]==='Sedação')byM[k].s++; else byM[k].o++; });
+  const sm=Object.keys(byM).sort().map(k=>byM[k]);
+  mkChart('cirMes',{type:'bar',data:{labels:sm.map(d=>d.l),datasets:[{label:'Implantes',data:sm.map(d=>d.i),backgroundColor:CC.green,stack:'a'},{label:'Sedações',data:sm.map(d=>d.s),backgroundColor:CC.purple,stack:'a'},{label:'Outros',data:sm.map(d=>d.o),backgroundColor:CC.blue,stack:'a'}]},options:baseOpts(true)});
+  const byT={};
+  rows.forEach(r=>{byT[r[2]]=(byT[r[2]]||0)+1;});
+  const tk=Object.keys(byT).sort((a,b)=>byT[b]-byT[a]).slice(0,10);
+  mkChart('cirTipo',{type:'bar',data:{labels:tk,datasets:[{label:'Qtde',data:tk.map(k=>byT[k]),backgroundColor:PAL.slice(0,tk.length)}]},options:hbarOpts()});
+  const byD={};
+  rows.forEach(r=>{byD[r[1]]=(byD[r[1]]||0)+1;});
+  mkChart('cirDentista',{type:'doughnut',data:{labels:Object.keys(byD),datasets:[{data:Object.values(byD),backgroundColor:[CC.purple,CC.blue,CC.green],borderWidth:0}]},options:pieOpts()});
+  const byMot={};
+  DB.implPerdidos.forEach(r=>{byMot[r.motivo]=(byMot[r.motivo]||0)+1;});
+  mkChart('cirPerdidos',{type:'doughnut',data:{labels:Object.keys(byMot),datasets:[{data:Object.values(byMot),backgroundColor:[CC.red,CC.orange,CC.yellow,CC.pink,CC.teal],borderWidth:0}]},options:pieOpts()});
+  document.querySelector('#cirPerdidosTable tbody').innerHTML=DB.implPerdidos.map(r=>{
+    const d=new Date((r.serial-25569)*86400*1000);
+    return `<tr><td>${r.dentista}</td><td>${r.paciente}</td><td><span class="badge badge-red">${r.motivo}</span></td><td>${d.toLocaleDateString('pt-BR')}</td></tr>`;
+  }).join('');
+}
+
+function renderLabAcrilico(){
+  const rows=DB.acr.filter(r=>{ const ym=exYM(r[0]); return inFilter(ym.y,ym.m); });
+  const protos=rows.filter(r=>r[1].toLowerCase().includes('protocol')).length;
+  const ppr=rows.filter(r=>r[1].toLowerCase().includes('ppr')||r[1].toLowerCase().includes(' pt ')).length;
+  const rep=rows.filter(r=>r[2]==='Repetição'||r[2]==='Repetição ').length;
+  document.getElementById('acrKpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Trabalhos</div><div class="kpi-value">${rows.length}</div><div class="kpi-sub">entregues</div></div>
+    <div class="kpi green"><div class="kpi-label">Protocolos</div><div class="kpi-value">${protos}</div><div class="kpi-sub">próteses</div></div>
+    <div class="kpi blue"><div class="kpi-label">PPR / PT</div><div class="kpi-value">${ppr}</div><div class="kpi-sub">total</div></div>
+    <div class="kpi ${rep>0?'red':'green'}"><div class="kpi-label">Repetições</div><div class="kpi-value">${rep}</div><div class="kpi-sub">retrabalhos</div></div>`;
+  const byM={};
+  rows.forEach(r=>{ const ym=exYM(r[0]); const k=mk(ym.y,ym.m); if(!byM[k])byM[k]={l:fmtMes(ym.y,ym.m),t:0}; byM[k].t++; });
+  const sm=Object.keys(byM).sort().map(k=>byM[k]);
+  mkChart('acrMes',{type:'bar',data:{labels:sm.map(d=>d.l),datasets:[{label:'Trabalhos',data:sm.map(d=>d.t),backgroundColor:CC.purple,borderRadius:4}]},options:baseOpts()});
+  const byT={};
+  rows.forEach(r=>{byT[r[1]]=(byT[r[1]]||0)+1;});
+  const tk=Object.keys(byT).sort((a,b)=>byT[b]-byT[a]).slice(0,8);
+  mkChart('acrTipo',{type:'bar',data:{labels:tk,datasets:[{label:'Qtde',data:tk.map(k=>byT[k]),backgroundColor:PAL.slice(0,tk.length)}]},options:hbarOpts()});
+  const bRows=DB.barras.filter(r=>inFilter(r[0],r[1]));
+  const byBM={};
+  bRows.forEach(r=>{ const k=mk(r[0],r[1]); if(!byBM[k])byBM[k]={l:fmtMes(r[0],r[1]),t:0}; byBM[k].t+=r[2]; });
+  const bm=Object.keys(byBM).sort().map(k=>byBM[k]);
+  mkChart('acrBarras',{type:'bar',data:{labels:bm.map(d=>d.l),datasets:[{label:'Barras',data:bm.map(d=>d.t),backgroundColor:CC.blue,borderRadius:4}]},options:baseOpts()});
+  const byD={};
+  rows.forEach(r=>{byD[r[3]]=(byD[r[3]]||0)+1;});
+  const dk=Object.keys(byD).sort((a,b)=>byD[b]-byD[a]).slice(0,8);
+  mkChart('acrDentista',{type:'bar',data:{labels:dk,datasets:[{label:'Trabalhos',data:dk.map(k=>byD[k]),backgroundColor:CC.green,borderRadius:4}]},options:hbarOpts()});
+}
+
+function renderLabCeramico(){
+  const rows=DB.cer.filter(r=>inFilter(r[0],r[1]));
+  const total=rows.reduce((s,r)=>s+r[2],0);
+  const zir=rows.reduce((s,r)=>s+r[3],0);
+  const emax=rows.reduce((s,r)=>s+r[4],0);
+  const reps=Math.round(total*0.08);
+  document.getElementById('cerKpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Trabalhos</div><div class="kpi-value">${total}</div><div class="kpi-sub">enviados</div></div>
+    <div class="kpi green"><div class="kpi-label">Zircônia</div><div class="kpi-value">${zir}</div><div class="kpi-sub">peças</div></div>
+    <div class="kpi blue"><div class="kpi-label">Cerâmica/Emax</div><div class="kpi-value">${emax}</div><div class="kpi-sub">peças</div></div>
+    <div class="kpi red"><div class="kpi-label">Repetições</div><div class="kpi-value">~${reps}</div><div class="kpi-sub">retrabalhos</div></div>`;
+  mkChart('cerMes',{type:'bar',data:{labels:rows.map(r=>fmtMes(r[0],r[1])),datasets:[
+    {label:'Zircônia',data:rows.map(r=>r[3]),backgroundColor:CC.purple,stack:'a'},
+    {label:'Emax',data:rows.map(r=>r[4]),backgroundColor:CC.blue,stack:'a'},
+    {label:'Metal',data:rows.map(r=>r[5]),backgroundColor:CC.yellow,stack:'a'},
+    {label:'Orto',data:rows.map(r=>r[6]),backgroundColor:CC.green,stack:'a'},
+    {label:'Outro',data:rows.map(r=>r[7]),backgroundColor:CC.teal,stack:'a'},
+  ]},options:baseOpts(true)});
+  const tipoT={Zircônia:zir,'Cerâmica Emax':emax,Metal:rows.reduce((s,r)=>s+r[5],0),Ortodontia:rows.reduce((s,r)=>s+r[6],0),Outro:rows.reduce((s,r)=>s+r[7],0)};
+  mkChart('cerTipo',{type:'doughnut',data:{labels:Object.keys(tipoT),datasets:[{data:Object.values(tipoT),backgroundColor:PAL.slice(0,5),borderWidth:0}]},options:pieOpts()});
+  const labs=Object.keys(DB.cerLabs);
+  mkChart('cerLab',{type:'bar',data:{labels:labs,datasets:[{label:'Trabalhos',data:labs.map(l=>DB.cerLabs[l]),backgroundColor:PAL.slice(0,labs.length)}]},options:hbarOpts()});
+  mkChart('cerRep',{type:'bar',data:{labels:Object.keys(DB.cerReps),datasets:[{label:'Ocorrências',data:Object.values(DB.cerReps),backgroundColor:CC.red,borderRadius:4}]},options:hbarOpts()});
+}
+
+function renderFinanceiro(){
+  const ult=DB.saldo[0]||{};
+  document.getElementById('finSaldos').innerHTML=`
+    <div class="saldo-card"><div class="saldo-label">Bradesco C/C</div><div class="saldo-value">${fmtBRL(ult.bradesco||ult[2]||0)}</div><div class="saldo-sub">conta corrente</div></div>
+    <div class="saldo-card"><div class="saldo-label">Saldo Aplicado</div><div class="saldo-value">${fmtBRL(ult.aplicado||ult[3]||0)}</div><div class="saldo-sub">Bradesco</div></div>
+    <div class="saldo-card"><div class="saldo-label">Dinheiro Caixa</div><div class="saldo-value">${fmtBRL(ult.caixa||ult[4]||0)}</div><div class="saldo-sub">em caixa</div></div>
+    <div class="saldo-card"><div class="saldo-label">Recebível Cielo</div><div class="saldo-value">${fmtBRL(ult.cieloMes||ult[5]||0)}</div><div class="saldo-sub">mês</div></div>`;
+  const rows=[...DB.fin].filter(r=>inFilter(r[0],r[1])).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
+  const labels=rows.map(r=>fmtMes(r[0],r[1]));
+  mkChart('finLinhas',{type:'line',data:{labels,datasets:[
+    {label:'Total Entradas',data:rows.map(r=>r[3]),borderColor:CC.green,backgroundColor:'rgba(76,255,176,0.1)',tension:.3,fill:true,pointRadius:3},
+    {label:'Despesas',data:rows.map(r=>r[4]),borderColor:CC.red,backgroundColor:'rgba(255,85,102,0.1)',tension:.3,fill:true,pointRadius:3},
+    {label:'Lucro Operacional',data:rows.map(r=>r[5]),borderColor:CC.purple,backgroundColor:'rgba(180,75,255,0.1)',tension:.3,fill:true,pointRadius:3},
+  ]},options:{...baseOpts(),plugins:{legend:{labels:{color:'#c4a8e0',font:{size:11}}},tooltip:{backgroundColor:'rgba(30,0,50,0.9)',titleColor:'#d480ff',bodyColor:'#f0e6ff'}}}});
+  mkChart('finLucro',{type:'bar',data:{labels,datasets:[{label:'Divisão Lucro',data:rows.map(r=>r[6]),backgroundColor:CC.yellow,borderRadius:4}]},options:baseOpts()});
+  document.querySelector('#finTable tbody').innerHTML=[...rows].reverse().map(r=>{
+    const conv=r[8]&&r[7]?((r[8]/r[7])*100).toFixed(1)+'%':'-';
+    const lc=r[5]>=0?'badge-green':'badge-red';
+    return `<tr><td><b>${fmtMes(r[0],r[1])}</b></td><td class="num">${r[2]?fmtBRL(r[2]):'-'}</td><td class="num">${r[3]?fmtBRL(r[3]):'-'}</td><td class="num">${r[4]?fmtBRL(r[4]):'-'}</td><td class="num"><span class="badge ${lc}">${fmtBRL(r[5])}</span></td><td class="num">${r[6]?fmtBRL(r[6]):'-'}</td><td class="num">${r[7]||'-'}</td><td class="num">${r[8]||'-'}</td><td class="num">${conv}</td></tr>`;
+  }).join('');
+}
+
+function renderResgate(){
+  const rows=[...DB.res].filter(r=>inFilter(r[0],r[1])).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
+  const total=rows.reduce((s,r)=>s+r[2],0);
+  const d30=rows.reduce((s,r)=>s+r[3],0);
+  const d30p=rows.reduce((s,r)=>s+r[4],0);
+  const last=rows[rows.length-1]||{};
+  const tick=last[2]&&(last[5]+last[6])>0?Math.round(last[2]/(last[5]+last[6])):0;
+  const metas=rows.filter(r=>r[2]>=r[7]).length;
+  document.getElementById('resKpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Resgate</div><div class="kpi-value">${fmtBRL(total)}</div><div class="kpi-sub">período</div></div>
+    <div class="kpi green"><div class="kpi-label">Resgate 30D</div><div class="kpi-value">${fmtBRL(d30)}</div><div class="kpi-sub">dentro 30 dias</div></div>
+    <div class="kpi blue"><div class="kpi-label">Resgate 30+</div><div class="kpi-value">${fmtBRL(d30p)}</div><div class="kpi-sub">acima 30 dias</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Ticket Médio</div><div class="kpi-value">${tick?fmtBRL(tick):'—'}</div><div class="kpi-sub">último mês</div></div>
+    <div class="kpi ${metas>=rows.length*.7?'green':'red'}"><div class="kpi-label">Metas Atingidas</div><div class="kpi-value">${metas}/${rows.length}</div><div class="kpi-sub">meses</div></div>`;
+  const labels=rows.map(r=>fmtMes(r[0],r[1]));
+  mkChart('resMes',{type:'bar',data:{labels,datasets:[
+    {label:'Total Resgate',data:rows.map(r=>r[2]),backgroundColor:CC.purple,borderRadius:4},
+    {label:'Meta',data:rows.map(r=>r[7]),type:'line',borderColor:CC.yellow,borderDash:[5,5],pointRadius:3,fill:false,backgroundColor:'transparent'},
+  ]},options:baseOpts()});
+  mkChart('res30',{type:'bar',data:{labels,datasets:[
+    {label:'30D',data:rows.map(r=>r[3]),backgroundColor:CC.green,stack:'a'},
+    {label:'30+',data:rows.map(r=>r[4]),backgroundColor:CC.blue,stack:'a'},
+  ]},options:baseOpts(true)});
+  const finRows=[...DB.fin].filter(r=>inFilter(r[0],r[1])).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
+  mkChart('resConv',{type:'bar',data:{labels:finRows.map(r=>fmtMes(r[0],r[1])),datasets:[
+    {label:'Avaliações',data:finRows.map(r=>r[7]),backgroundColor:CC.blue,borderRadius:4},
+    {label:'Fechamentos',data:finRows.map(r=>r[8]),backgroundColor:CC.green,borderRadius:4},
+  ]},options:baseOpts()});
+  mkChart('resTick',{type:'line',data:{labels,datasets:[{label:'Ticket Médio',data:rows.map(r=>(r[5]+r[6])>0?Math.round(r[2]/(r[5]+r[6])):null),borderColor:CC.yellow,backgroundColor:'rgba(255,224,102,0.1)',tension:.3,fill:true,pointRadius:3,spanGaps:true}]},options:baseOpts()});
+  document.querySelector('#resTable tbody').innerHTML=[...rows].reverse().map(r=>{
+    const ok=r[2]>=r[7];
+    return `<tr><td><b>${fmtMes(r[0],r[1])}</b></td><td class="num">${fmtBRL(r[2])}</td><td class="num">${fmtBRL(r[3])}</td><td class="num">${fmtBRL(r[4])}</td><td class="num">${r[5]||'—'}</td><td class="num">${r[6]||'—'}</td><td class="num">${fmtBRL(r[7])}</td><td><span class="badge ${ok?'badge-green':'badge-red'}">${ok?'Atingida':'Abaixo'}</span></td></tr>`;
+  }).join('');
+}
+
+// =============================================
+// ATUALIZAÇÃO ONLINE (Google Sheets)
+// =============================================
+const SHEETS={
+  cirurgias: {id:'17Am4O266ltsl3NUiWYlyKYaBG5TavkFBPvgXJsDriDI',gid:'0'},
+  labAcrilico:{id:'1tgSgFSxLXt0a9rcKx-n7r46Ea_mmA7ZAVJTsFVl0Z0U',gid:'581144365'},
+  labCeramico:{id:'1z55awUcObY-QqwQRUJ4FtAVKY8StQKrrz1tbBN_7Uxo',gid:'439297292'},
+  finSaldo:   {id:'1ewDFgaOaMGBJwpAgMjj7VXdEUEX9Anxt1vwFoNictrQ',gid:'0'},
+  resgate:    {id:'14pZKcuSyGpOIWhT6BqTjuhGWPhOlvtM3hLXYK2k_Spk',gid:'1804191592'},
+};
+
+function csvUrl(k){ const s=SHEETS[k]; return `https://docs.google.com/spreadsheets/d/${s.id}/export?format=csv&gid=${s.gid}`; }
+
+function parseCSV(text){
+  const rows=[];
+  for(const line of text.split('\n')){
+    if(!line.trim())continue;
+    const row=[];let inQ=false,cell='';
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;continue;}
+      if(c===','&&!inQ){row.push(cell.trim());cell='';continue;}
+      cell+=c;
+    }
+    row.push(cell.trim());
+    rows.push(row);
+  }
+  return rows;
+}
+function parseBR(s){ if(!s)return 0; return parseFloat(String(s).replace(/\./g,'').replace(',','.'))||0; }
+function parseDate(v){
+  if(!v)return null;
+  const n=parseInt(v);
+  if(!isNaN(n)&&n>40000&&n<50000){ const d=new Date((n-25569)*86400*1000); return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1}; }
+  const p=v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(p){ const y=parseInt(p[3])<100?2000+parseInt(p[3]):parseInt(p[3]); return{y,m:parseInt(p[2])}; }
+  return null;
+}
+function findHdr(rows,markers){
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const j=rows[i].join(',').toLowerCase();
+    if(markers.every(m=>j.includes(m.toLowerCase())))return i;
+  }
+  return -1;
+}
+
+function setLoadStep(msg){ const el=document.getElementById('loadStep'); if(el)el.textContent=msg; }
+
+async function carregarSheets(isRefresh){
+  const dot=document.getElementById('statusDot');
+  const upd=document.getElementById('lastUpdate');
+  const btn=document.getElementById('refreshBtn');
+  dot.className='status-dot loading';
+  if(btn)btn.disabled=true;
+  upd.textContent='Buscando Sheets...';
+  let updated=0;
+  try{
+    // Cirurgias
+    setLoadStep('Carregando Cirurgias…');
+    const cirCSV=await fetch(csvUrl('cirurgias'),{redirect:'follow'});
+    if(cirCSV.ok){
+      const rows=parseCSV(await cirCSV.text());
+      const hi=findHdr(rows,['Dentista','Tipo','Qtde','Data']);
+      if(hi>=0){
+        const hdr=rows[hi].map(h=>h.toLowerCase());
+        const iD=hdr.findIndex(h=>h.includes('dentista')),iT=hdr.findIndex(h=>h.includes('tipo')),iQ=hdr.findIndex(h=>h.includes('qtde')),iDt=hdr.findIndex(h=>h.includes('data'));
+        const newCir=[];
+        for(let i=hi+1;i<rows.length;i++){
+          const r=rows[i]; if(!r[iDt]||!r[iT])continue;
+          const ym=parseDate(r[iDt]); if(!ym)continue;
+          const ser=parseInt(r[iDt])||0;
+          newCir.push([ser||0,r[iD]||'',r[iT]||'',parseInt(r[iQ])||1]);
+        }
+        if(newCir.length>10){DB.cir=newCir;updated++;}
+      }
+    }
+  }catch(e){}
+  try{
+    // Financeiro Saldo
+    setLoadStep('Carregando Financeiro…');
+    const finCSV=await fetch(csvUrl('finSaldo'),{redirect:'follow'});
+    if(finCSV.ok){
+      const rows=parseCSV(await finCSV.text());
+      const newSaldo=[];
+      for(let i=0;i<rows.length;i++){
+        const r=rows[i]; if(!r[0])continue;
+        const ym=parseDate(r[0]); if(!ym)continue;
+        const b=parseBR(r[1]);
+        if(b>0) newSaldo.push([ym.y,ym.m,b,parseBR(r[2]),parseBR(r[3]),parseBR(r[5])]);
+      }
+      if(newSaldo.length>3){DB.saldo=newSaldo.sort((a,b)=>mk(b[0],b[1])-mk(a[0],a[1]));updated++;}
+    }
+  }catch(e){}
+  try{
+    // Lab Acrílico
+    setLoadStep('Carregando Lab Acrílico…');
+    const acrCSV=await fetch(csvUrl('labAcrilico'),{redirect:'follow'});
+    if(acrCSV.ok){
+      const rows=parseCSV(await acrCSV.text());
+      const hi=findHdr(rows,['Trabalho','Tipo','Qtde']);
+      if(hi>=0){
+        const hdr=rows[hi].map(h=>h.toLowerCase());
+        const iDt=hdr.findIndex(h=>h.includes('data')),iW=hdr.findIndex(h=>h.includes('trabalho')),iT=hdr.findIndex(h=>h.includes('tipo')),iDn=hdr.findIndex(h=>h.includes('dentista'));
+        const newAcr=[];
+        for(let i=hi+1;i<rows.length;i++){
+          const r=rows[i]; if(!r[iDt]||!r[iW])continue;
+          const ym=parseDate(r[iDt]); if(!ym)continue;
+          const ser=parseInt(r[iDt])||mk(ym.y,ym.m)*10;
+          newAcr.push([ser,r[iW]||'',r[iT]||'',r[iDn]||'']);
+        }
+        if(newAcr.length>10){DB.acr=newAcr;updated++;}
+      }
+    }
+  }catch(e){}
+  try{
+    // Lab Cerâmico
+    setLoadStep('Carregando Lab Cerâmico…');
+    const cerCSV=await fetch(csvUrl('labCeramico'),{redirect:'follow'});
+    if(cerCSV.ok){
+      const rows=parseCSV(await cerCSV.text());
+      const hi=findHdr(rows,['Tipo','Trabalho','Laboratório']);
+      if(hi>=0){
+        const hdr=rows[hi].map(h=>h.toLowerCase());
+        const iDt=hdr.findIndex(h=>h.includes('chegada')||h.includes('envio')),iT=hdr.findIndex(h=>h==='tipo'),iL=hdr.findIndex(h=>h.includes('laborat')),iR=hdr.findIndex(h=>h.includes('repeti')),iJ=hdr.findIndex(h=>h.includes('justif'));
+        // Aggregate by month
+        const byMes={};
+        const labs={};
+        const reps={};
+        for(let i=hi+1;i<rows.length;i++){
+          const r=rows[i]; if(!r[iDt]||!r[iT])continue;
+          const ym=parseDate(r[iDt]); if(!ym)continue;
+          const k=mk(ym.y,ym.m);
+          if(!byMes[k])byMes[k]=[ym.y,ym.m,0,0,0,0,0,0];
+          byMes[k][2]++;
+          const t=r[iT].toLowerCase();
+          if(t.includes('zircônia')||t.includes('zirconia'))byMes[k][3]++;
+          else if(t.includes('emax')||t.includes('cerâmica'))byMes[k][4]++;
+          else if(t.includes('metal')||t.includes('solda'))byMes[k][5]++;
+          else if(t.includes('orto'))byMes[k][6]++;
+          else byMes[k][7]++;
+          if(r[iL])labs[r[iL]]=(labs[r[iL]]||0)+1;
+          if(r[iR]==='SIM'&&r[iJ])reps[r[iJ]]=(reps[r[iJ]]||0)+1;
+        }
+        const newCer=Object.values(byMes).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
+        if(newCer.length>3){DB.cer=newCer;DB.cerLabs=labs;DB.cerReps=Object.keys(reps).length>0?reps:{};updated++;}
+      }
+    }
+  }catch(e){}
+
+  try{
+    // Resgate/Relacionamento
+    setLoadStep('Carregando Leads / Resgate…');
+    const resCSV=await fetch(csvUrl('resgate'),{redirect:'follow'});
+    if(resCSV.ok){
+      const rows=parseCSV(await resCSV.text());
+      // Colunas: ,Nº,Paciente,Ficha,Data Avaliação,Data Fechamento,Valor,Entrada,Dias,30D,30+,Acréscimo,Relacionamento,Vlr 30D,Vlr 30+...
+      const hi=findHdr(rows,['Paciente','Valor','Data Fechamento']);
+      if(hi>=0){
+        const hdr=rows[hi].map(h=>h.toLowerCase().trim());
+        const iFec=hdr.findIndex(h=>h.includes('fechamento')),iVal=hdr.findIndex(h=>h==='valor'),i30d=hdr.findIndex(h=>h==='30d'||h==='vlr 30d'),i30p=hdr.findIndex(h=>h==='30+'||h==='vlr 30+'),iRel=hdr.findIndex(h=>h.includes('relacionamento'));
+        const byM={};
+        for(let i=hi+1;i<rows.length;i++){
+          const r=rows[i];
+          if(!r[iFec]||!r[iVal])continue;
+          const ym=parseDate(r[iFec]); if(!ym)continue;
+          const k=mk(ym.y,ym.m);
+          if(!byM[k])byM[k]=[ym.y,ym.m,0,0,0,0,0,150000,0,0];
+          const val=parseBR(r[iVal]);
+          byM[k][2]+=val;
+          const rel=(r[iRel]||'').toLowerCase();
+          if(rel.includes('d30')&&!rel.includes('d30+')){ byM[k][3]+=parseBR(r[i30d]||r[iVal]); byM[k][5]++; }
+          else if(rel.includes('d30+')){ byM[k][4]+=parseBR(r[i30p]||r[iVal]); byM[k][6]++; }
+          byM[k][9]++;
+        }
+        const newRes=Object.values(byM).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
+        if(newRes.length>1){DB.res=newRes;updated++;}
+      }
+    }
+  }catch(e){}
+
+  const now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(updated>0){
+    upd.textContent=`Atualizado: ${now}`;
+    dot.className='status-dot ok';
+    // Esconder loading overlay
+    const lo=document.getElementById('loadingOverlay');
+    if(lo)lo.style.display='none';
+    renderPage(currentPage);
+  } else if(isRefresh){
+    upd.textContent='Sem conexão com Sheets';
+    dot.className='status-dot local';
+  } else {
+    // Falhou no carregamento inicial — mostrar erro
+    const lo=document.getElementById('loadingOverlay');
+    if(lo)lo.style.display='none';
+    const eo=document.getElementById('errorOverlay');
+    if(eo)eo.style.display='flex';
+    upd.textContent='Erro ao carregar';
+    dot.className='status-dot';
+  }
+  if(btn)btn.disabled=false;
+}
+
+function iniciarCarregamento(){
+  // Esconder erro, mostrar loading
+  const eo=document.getElementById('errorOverlay');
+  if(eo)eo.style.display='none';
+  const lo=document.getElementById('loadingOverlay');
+  if(lo)lo.style.display='flex';
+  carregarSheets(false);
+}
+
+async function tryOnlineUpdate(){ await carregarSheets(true); }
+
+// =============================================
+// INIT
+// =============================================
+iniciarCarregamento();
+setInterval(()=>{ tryOnlineUpdate(); }, 5*60*1000);
+</script>
+</body>
+</html>
