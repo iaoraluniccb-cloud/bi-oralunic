@@ -1084,11 +1084,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 // =============================================
 // INIT
 // =============================================
-// Se já estava autenticado nessa sessão, pula o login
-if(sessionStorage.getItem('bi_auth')==='ok'){
-  document.getElementById('loginOverlay').style.display='none';
-  iniciarCarregamento();
-}
+sessionStorage.removeItem('bi_auth');
 setInterval(()=>{ if(sessionStorage.getItem('bi_auth')==='ok') tryOnlineUpdate(); }, 5*60*1000);
 </script>
 </body>
