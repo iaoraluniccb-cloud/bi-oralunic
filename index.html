@@ -831,13 +831,16 @@ function parseCSV(text){
   }
   return rows;
 }
-function parseBR(s){ if(!s)return 0; return parseFloat(String(s).replace(/\./g,'').replace(',','.'))||0; }
+function parseBR(s){ if(!s)return 0; return parseFloat(String(s).replace(/"/g,'').replace(/\./g,'').replace(',','.'))||0; }
+function cleanStr(s){ return s?String(s).replace(/^"|"$/g,'').trim():''; }
+function dateToSerial(dd,mm,yyyy){ const d=new Date(Date.UTC(yyyy,mm-1,dd)); return Math.round((d-new Date(Date.UTC(1899,11,30)))/86400000); }
 function parseDate(v){
   if(!v)return null;
-  const n=parseInt(v);
-  if(!isNaN(n)&&n>40000&&n<50000){ const d=new Date((n-25569)*86400*1000); return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1}; }
-  const p=v.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(p){ const y=parseInt(p[3])<100?2000+parseInt(p[3]):parseInt(p[3]); return{y,m:parseInt(p[2])}; }
+  const s=cleanStr(v);
+  const n=parseInt(s);
+  if(!isNaN(n)&&n>40000&&n<60000){ const d=new Date((n-25569)*86400*1000); return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,serial:n}; }
+  const p=s.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(p){ const y=parseInt(p[3])<100?2000+parseInt(p[3]):parseInt(p[3]); const serial=dateToSerial(parseInt(p[1]),parseInt(p[2]),y); return{y,m:parseInt(p[2]),serial}; }
   return null;
 }
 function findHdr(rows,markers){
@@ -872,8 +875,7 @@ async function carregarSheets(isRefresh){
         for(let i=hi+1;i<rows.length;i++){
           const r=rows[i]; if(!r[iDt]||!r[iT])continue;
           const ym=parseDate(r[iDt]); if(!ym)continue;
-          const ser=parseInt(r[iDt])||0;
-          newCir.push([ser||0,r[iD]||'',r[iT]||'',parseInt(r[iQ])||1]);
+          newCir.push([ym.serial,cleanStr(r[iD]),cleanStr(r[iT]),parseInt(cleanStr(r[iQ]))||1]);
         }
         if(newCir.length>10){DB.cir=newCir;updated++;}
       }
@@ -888,7 +890,7 @@ async function carregarSheets(isRefresh){
       const newSaldo=[];
       for(let i=0;i<rows.length;i++){
         const r=rows[i]; if(!r[0])continue;
-        const ym=parseDate(r[0]); if(!ym)continue;
+        const ym=parseDate(cleanStr(r[0])); if(!ym)continue;
         const b=parseBR(r[1]);
         if(b>0) newSaldo.push([ym.y,ym.m,b,parseBR(r[2]),parseBR(r[3]),parseBR(r[5])]);
       }
@@ -909,8 +911,7 @@ async function carregarSheets(isRefresh){
         for(let i=hi+1;i<rows.length;i++){
           const r=rows[i]; if(!r[iDt]||!r[iW])continue;
           const ym=parseDate(r[iDt]); if(!ym)continue;
-          const ser=parseInt(r[iDt])||mk(ym.y,ym.m)*10;
-          newAcr.push([ser,r[iW]||'',r[iT]||'',r[iDn]||'']);
+          newAcr.push([ym.serial,cleanStr(r[iW]),cleanStr(r[iT]),cleanStr(r[iDn])]);
         }
         if(newAcr.length>10){DB.acr=newAcr;updated++;}
       }
@@ -936,14 +937,14 @@ async function carregarSheets(isRefresh){
           const k=mk(ym.y,ym.m);
           if(!byMes[k])byMes[k]=[ym.y,ym.m,0,0,0,0,0,0];
           byMes[k][2]++;
-          const t=r[iT].toLowerCase();
+          const t=cleanStr(r[iT]).toLowerCase();
           if(t.includes('zircônia')||t.includes('zirconia'))byMes[k][3]++;
           else if(t.includes('emax')||t.includes('cerâmica'))byMes[k][4]++;
           else if(t.includes('metal')||t.includes('solda'))byMes[k][5]++;
           else if(t.includes('orto'))byMes[k][6]++;
           else byMes[k][7]++;
-          if(r[iL])labs[r[iL]]=(labs[r[iL]]||0)+1;
-          if(r[iR]==='SIM'&&r[iJ])reps[r[iJ]]=(reps[r[iJ]]||0)+1;
+          const lab=cleanStr(r[iL]); if(lab)labs[lab]=(labs[lab]||0)+1;
+          const rep=cleanStr(r[iR]),just=cleanStr(r[iJ]); if(rep==='SIM'&&just)reps[just]=(reps[just]||0)+1;
         }
         const newCer=Object.values(byMes).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
         if(newCer.length>3){DB.cer=newCer;DB.cerLabs=labs;DB.cerReps=Object.keys(reps).length>0?reps:{};updated++;}
