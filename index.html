@@ -813,7 +813,7 @@ const SHEETS={
   resgate:    {id:'14pZKcuSyGpOIWhT6BqTjuhGWPhOlvtM3hLXYK2k_Spk',gid:'1804191592'},
 };
 
-function csvUrl(k){ const s=SHEETS[k]; return `https://docs.google.com/spreadsheets/d/${s.id}/export?format=csv&gid=${s.gid}`; }
+function csvUrl(k){ const s=SHEETS[k]; return `https://docs.google.com/spreadsheets/d/${s.id}/gviz/tq?tqx=out:csv&gid=${s.gid}`; }
 
 function parseCSV(text){
   const rows=[];
@@ -861,7 +861,7 @@ async function carregarSheets(isRefresh){
   try{
     // Cirurgias
     setLoadStep('Carregando Cirurgias…');
-    const cirCSV=await fetch(csvUrl('cirurgias'),{redirect:'follow'});
+    const cirCSV=await fetch(csvUrl('cirurgias'),{mode:'cors',credentials:'omit'});
     if(cirCSV.ok){
       const rows=parseCSV(await cirCSV.text());
       const hi=findHdr(rows,['Dentista','Tipo','Qtde','Data']);
@@ -882,7 +882,7 @@ async function carregarSheets(isRefresh){
   try{
     // Financeiro Saldo
     setLoadStep('Carregando Financeiro…');
-    const finCSV=await fetch(csvUrl('finSaldo'),{redirect:'follow'});
+    const finCSV=await fetch(csvUrl('finSaldo'),{mode:'cors',credentials:'omit'});
     if(finCSV.ok){
       const rows=parseCSV(await finCSV.text());
       const newSaldo=[];
@@ -898,7 +898,7 @@ async function carregarSheets(isRefresh){
   try{
     // Lab Acrílico
     setLoadStep('Carregando Lab Acrílico…');
-    const acrCSV=await fetch(csvUrl('labAcrilico'),{redirect:'follow'});
+    const acrCSV=await fetch(csvUrl('labAcrilico'),{mode:'cors',credentials:'omit'});
     if(acrCSV.ok){
       const rows=parseCSV(await acrCSV.text());
       const hi=findHdr(rows,['Trabalho','Tipo','Qtde']);
@@ -919,7 +919,7 @@ async function carregarSheets(isRefresh){
   try{
     // Lab Cerâmico
     setLoadStep('Carregando Lab Cerâmico…');
-    const cerCSV=await fetch(csvUrl('labCeramico'),{redirect:'follow'});
+    const cerCSV=await fetch(csvUrl('labCeramico'),{mode:'cors',credentials:'omit'});
     if(cerCSV.ok){
       const rows=parseCSV(await cerCSV.text());
       const hi=findHdr(rows,['Tipo','Trabalho','Laboratório']);
@@ -954,7 +954,7 @@ async function carregarSheets(isRefresh){
   try{
     // Resgate/Relacionamento
     setLoadStep('Carregando Leads / Resgate…');
-    const resCSV=await fetch(csvUrl('resgate'),{redirect:'follow'});
+    const resCSV=await fetch(csvUrl('resgate'),{mode:'cors',credentials:'omit'});
     if(resCSV.ok){
       const rows=parseCSV(await resCSV.text());
       // Colunas: ,Nº,Paciente,Ficha,Data Avaliação,Data Fechamento,Valor,Entrada,Dias,30D,30+,Acréscimo,Relacionamento,Vlr 30D,Vlr 30+...
