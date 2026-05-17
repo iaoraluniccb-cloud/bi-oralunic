@@ -220,17 +220,7 @@
   .user-info{display:flex;flex-direction:column;gap:2px;}
   .user-name{font-family:'Josefin Sans',sans-serif;font-size:14px;font-weight:400;color:var(--ink);}
   .user-role{font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--copper);}
-  /* senha modal */
-  #passModal{position:fixed;inset:0;background:rgba(61,42,32,.35);z-index:1001;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
-  .pass-box{background:var(--ivory);border-radius:12px;padding:32px 36px;width:300px;display:flex;flex-direction:column;align-items:center;gap:0;box-shadow:0 8px 40px rgba(61,42,32,.15);}
-  .pass-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--wine-dk);margin-bottom:4px;}
-  .pass-sub{font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--moka);margin-bottom:24px;}
-  .pass-input{width:100%;padding:10px 14px;border:1px solid var(--warm);border-radius:6px;background:var(--blush-lt);font-family:'Josefin Sans',sans-serif;font-size:15px;font-weight:300;color:var(--ink);outline:none;transition:border .2s;text-align:center;letter-spacing:3px;margin-bottom:14px;}
-  .pass-input:focus{border-color:var(--copper);background:var(--ivory);}
-  .pass-btn{width:100%;padding:11px;border:none;border-radius:6px;background:var(--wine);color:var(--ivory);font-family:'Josefin Sans',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background .22s;}
-  .pass-btn:hover{background:var(--wine-lt);}
-  .pass-cancel{margin-top:10px;font-family:'Josefin Sans',sans-serif;font-size:11px;color:var(--moka);cursor:pointer;letter-spacing:.5px;background:none;border:none;text-decoration:underline;}
-  .login-error{font-family:'Josefin Sans',sans-serif;font-size:11px;color:var(--wine);letter-spacing:.5px;margin-top:10px;display:none;text-align:center;}
+  .user-card:active{transform:scale(0.98);}
   /* LOADING / ERROR */
   #loadingOverlay{position:fixed;inset:0;background:var(--ivory);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
   .spin{width:44px;height:44px;border:2px solid var(--warm);border-top-color:var(--copper);border-radius:50%;animation:spin .9s linear infinite;}
@@ -252,15 +242,15 @@
     <div class="login-brand">Athena</div>
     <div class="login-sub">Selecione seu usuário para entrar</div>
     <div class="user-list">
-      <div class="user-card" onclick="selecionarUsuario('adm','Thais','Administrador')">
+      <div class="user-card" onclick="entrarDireto('adm','Thais')">
         <div class="user-avatar" style="background:#8B2D42;">T</div>
         <div class="user-info"><span class="user-name">Thais</span><span class="user-role">Administrador</span></div>
       </div>
-      <div class="user-card" onclick="selecionarUsuario('mone','Mone','Diretora')">
+      <div class="user-card" onclick="entrarDireto('mone','Mone')">
         <div class="user-avatar" style="background:#9B3A5A;">M</div>
         <div class="user-info"><span class="user-name">Mone</span><span class="user-role">Diretora</span></div>
       </div>
-      <div class="user-card" onclick="selecionarUsuario('jarina','Jarina','Gerente')">
+      <div class="user-card" onclick="entrarDireto('jarina','Jarina')">
         <div class="user-avatar" style="background:#3D2A20;">J</div>
         <div class="user-info"><span class="user-name">Jarina</span><span class="user-role">Gerente</span></div>
       </div>
@@ -268,17 +258,6 @@
   </div>
 </div>
 
-<!-- MODAL SENHA -->
-<div id="passModal">
-  <div class="pass-box">
-    <div class="pass-title" id="passTitle">Thais</div>
-    <div class="pass-sub">Digite sua senha</div>
-    <input type="password" id="passInput" class="pass-input" placeholder="••••••" autocomplete="current-password"/>
-    <button class="pass-btn" onclick="confirmarSenha()">Entrar</button>
-    <button class="pass-cancel" onclick="fecharModal()">Cancelar</button>
-    <div class="login-error" id="loginError">Senha incorreta</div>
-  </div>
-</div>
 
 <div id="loadingOverlay">
   <div class="spin"></div>
@@ -1081,40 +1060,13 @@ async function tryOnlineUpdate(){ await carregarSheets(true); }
 // =============================================
 // LOGIN
 // =============================================
-const USERS={'adm':'ximia123','mone':'copper123','jarina':'gerente123'};
-let _selectedUser='';
-
-function selecionarUsuario(key,nome,role){
-  _selectedUser=key;
-  document.getElementById('passTitle').textContent=nome;
-  document.getElementById('passInput').value='';
-  document.getElementById('loginError').style.display='none';
-  document.getElementById('passModal').style.display='flex';
-  setTimeout(()=>document.getElementById('passInput').focus(),100);
+function entrarDireto(key,nome){
+  document.getElementById('loginOverlay').style.display='none';
+  sessionStorage.setItem('bi_auth','ok');
+  sessionStorage.setItem('bi_user',nome);
+  iniciarCarregamento();
 }
 
-function fecharModal(){
-  document.getElementById('passModal').style.display='none';
-  _selectedUser='';
-}
-
-function confirmarSenha(){
-  const p=document.getElementById('passInput').value;
-  const err=document.getElementById('loginError');
-  if(USERS[_selectedUser]&&USERS[_selectedUser]===p){
-    document.getElementById('passModal').style.display='none';
-    document.getElementById('loginOverlay').style.display='none';
-    sessionStorage.setItem('bi_auth','ok');
-    iniciarCarregamento();
-  } else {
-    err.style.display='block';
-    document.getElementById('passInput').value='';
-  }
-}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('passInput').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarSenha(); if(e.key==='Escape') fecharModal(); });
-});
 
 // =============================================
 // INIT
