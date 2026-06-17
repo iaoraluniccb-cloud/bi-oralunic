@@ -103,8 +103,7 @@
   <div class="logo">Oral<span>Unic</span> · Carlos Barbosa</div>
   <nav class="nav-tabs">
     <button class="tab-btn active" onclick="showPage('cirurgias',this)">Cirurgias</button>
-    <button class="tab-btn" onclick="showPage('labacrilico',this)">Lab Acrílico</button>
-    <button class="tab-btn" onclick="showPage('labceramico',this)">Lab Cerâmico</button>
+    <button class="tab-btn" onclick="showPage('labinterno',this)">Laboratório</button>
     <button class="tab-btn" onclick="showPage('financeiro',this)">Financeiro</button>
     <button class="tab-btn" onclick="showPage('resgate',this)">Leads / Resgate</button>
   </nav>
@@ -140,29 +139,35 @@
   </div>
 </div>
 
-<!-- LAB ACRÍLICO -->
-<div class="page" id="page-labacrilico">
-  <div class="kpi-row" id="acrKpis"></div>
-  <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Trabalhos por Mês</div><div class="chart-wrap"><canvas id="acrMes"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Trabalhos por Tipo</div><div class="chart-wrap"><canvas id="acrTipo"></canvas></div></div>
-  </div>
-  <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Barras por Mês (Marcelo)</div><div class="chart-wrap"><canvas id="acrBarras"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Entrega por Dentista</div><div class="chart-wrap"><canvas id="acrDentista"></canvas></div></div>
-  </div>
-</div>
+<!-- LABORATÓRIO INTERNO -->
+<div class="page" id="page-labinterno">
 
-<!-- LAB CERÂMICO -->
-<div class="page" id="page-labceramico">
-  <div class="kpi-row" id="cerKpis"></div>
+  <!-- SEÇÃO: PRÓTESE INTERNA (Junior) -->
+  <div class="section-title">Prótese Interna — Junior</div>
+  <!-- KPIs Protocolos -->
+  <div class="kpi-row" id="labKpisProtocolo"></div>
+  <!-- KPIs Barras e Taxas -->
+  <div class="kpi-row" id="labKpisBarras"></div>
+
   <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Trabalhos por Mês</div><div class="chart-wrap"><canvas id="cerMes"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Distribuição por Tipo</div><div class="chart-wrap"><canvas id="cerTipo"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Protocolos Entregues por Mês</div><div class="chart-wrap"><canvas id="labProtMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Entregas por Dentista</div><div class="chart-wrap"><canvas id="labDentista"></canvas></div></div>
   </div>
   <div class="charts-row">
-    <div class="chart-card"><div class="chart-title">Por Laboratório</div><div class="chart-wrap tall"><canvas id="cerLab"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Repetições por Motivo</div><div class="chart-wrap"><canvas id="cerRep"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Barras e Soldas por Mês</div><div class="chart-wrap"><canvas id="labBarrasMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Distribuição por Tipo de Trabalho</div><div class="chart-wrap"><canvas id="labTipos"></canvas></div></div>
+  </div>
+
+  <!-- SEÇÃO: LAB EXTERNO (Cerâmico) -->
+  <div class="section-title" style="margin-top:12px;">Lab Externo — Cerâmico</div>
+  <div class="kpi-row" id="labKpisCer"></div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Coroas s/ Implante · Coroa s/ Dente · Facetas por Mês</div><div class="chart-wrap tall"><canvas id="cerCorMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Distribuição de Trabalhos</div><div class="chart-wrap"><canvas id="cerDistrib"></canvas></div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><div class="chart-title">Repetições e Ajustes por Mês</div><div class="chart-wrap"><canvas id="cerRefMes"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Entregas por Dentista</div><div class="chart-wrap"><canvas id="cerDentista"></canvas></div></div>
   </div>
 </div>
 
@@ -650,7 +655,7 @@ let currentPage = 'cirurgias';
 let DB = {
   cir: [], implPerdidos: [],
   acr: [], barras: [],
-  cer: [], cerLabs: {}, cerReps: {},
+  cer: [], cerLabs: {}, cerReps: {}, cerRaw: [],
   saldo: [], fin: [], res: [],
 };
 
@@ -717,8 +722,7 @@ function showPage(name,btn){
 // =============================================
 function renderPage(name){
   if(name==='cirurgias') renderCirurgias();
-  else if(name==='labacrilico') renderLabAcrilico();
-  else if(name==='labceramico') renderLabCeramico();
+  else if(name==='labinterno') renderLabInterno();
   else if(name==='financeiro') renderFinanceiro();
   else if(name==='resgate') renderResgate();
 }
@@ -755,58 +759,128 @@ function renderCirurgias(){
   }).join('');
 }
 
-function renderLabAcrilico(){
-  const rows=DB.acr.filter(r=>{ const ym=exYM(r[0]); return inFilter(ym.y,ym.m); });
-  const protos=rows.filter(r=>r[1].toLowerCase().includes('protocol')).length;
-  const ppr=rows.filter(r=>r[1].toLowerCase().includes('ppr')||r[1].toLowerCase().includes(' pt ')).length;
-  const rep=rows.filter(r=>r[2]==='Repetição'||r[2]==='Repetição ').length;
-  document.getElementById('acrKpis').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Total Trabalhos</div><div class="kpi-value">${rows.length}</div><div class="kpi-sub">entregues</div></div>
-    <div class="kpi green"><div class="kpi-label">Protocolos</div><div class="kpi-value">${protos}</div><div class="kpi-sub">próteses</div></div>
-    <div class="kpi blue"><div class="kpi-label">PPR / PT</div><div class="kpi-value">${ppr}</div><div class="kpi-sub">total</div></div>
-    <div class="kpi ${rep>0?'red':'green'}"><div class="kpi-label">Repetições</div><div class="kpi-value">${rep}</div><div class="kpi-sub">retrabalhos</div></div>`;
-  const byM={};
-  rows.forEach(r=>{ const ym=exYM(r[0]); const k=mk(ym.y,ym.m); if(!byM[k])byM[k]={l:fmtMes(ym.y,ym.m),t:0}; byM[k].t++; });
-  const sm=Object.keys(byM).sort().map(k=>byM[k]);
-  mkChart('acrMes',{type:'bar',data:{labels:sm.map(d=>d.l),datasets:[{label:'Trabalhos',data:sm.map(d=>d.t),backgroundColor:CC.purple,borderRadius:4}]},options:baseOpts()});
-  const byT={};
-  rows.forEach(r=>{byT[r[1]]=(byT[r[1]]||0)+1;});
-  const tk=Object.keys(byT).sort((a,b)=>byT[b]-byT[a]).slice(0,8);
-  mkChart('acrTipo',{type:'bar',data:{labels:tk,datasets:[{label:'Qtde',data:tk.map(k=>byT[k]),backgroundColor:PAL.slice(0,tk.length)}]},options:hbarOpts()});
-  const bRows=DB.barras.filter(r=>inFilter(r[0],r[1]));
-  const byBM={};
-  bRows.forEach(r=>{ const k=mk(r[0],r[1]); if(!byBM[k])byBM[k]={l:fmtMes(r[0],r[1]),t:0}; byBM[k].t+=r[2]; });
-  const bm=Object.keys(byBM).sort().map(k=>byBM[k]);
-  mkChart('acrBarras',{type:'bar',data:{labels:bm.map(d=>d.l),datasets:[{label:'Barras',data:bm.map(d=>d.t),backgroundColor:CC.blue,borderRadius:4}]},options:baseOpts()});
-  const byD={};
-  rows.forEach(r=>{byD[r[3]]=(byD[r[3]]||0)+1;});
-  const dk=Object.keys(byD).sort((a,b)=>byD[b]-byD[a]).slice(0,8);
-  mkChart('acrDentista',{type:'bar',data:{labels:dk,datasets:[{label:'Trabalhos',data:dk.map(k=>byD[k]),backgroundColor:CC.green,borderRadius:4}]},options:hbarOpts()});
-}
+function renderLabInterno(){
+  // ── PRÓTESE INTERNA (Lab Acrílico / Junior) ──
+  const acr=DB.acr.filter(r=>{ const ym=exYM(r[0]); return inFilter(ym.y,ym.m); });
+  const total=acr.length;
+  // Protocolos: definitivo sup/inf, provisório sup/inf
+  const protDef=acr.filter(r=>r[1].toLowerCase().includes('protocol')&&r[1].toLowerCase().includes('definitiv')).length;
+  const protProv=acr.filter(r=>r[1].toLowerCase().includes('protocol')&&r[1].toLowerCase().includes('proviso')).length;
+  const protTotal=acr.filter(r=>r[1].toLowerCase().includes('protocol')).length;
+  const pt=acr.filter(r=>/\bpt\b/.test(r[1].toLowerCase())).length;
+  const ppr=acr.filter(r=>r[1].toLowerCase().includes('ppr')).length;
+  const rep=acr.filter(r=>(r[2]||'').toLowerCase().includes('repeti')).length;
+  const txRef=total>0?(rep/total*100).toFixed(1):0;
 
-function renderLabCeramico(){
-  const rows=DB.cer.filter(r=>inFilter(r[0],r[1]));
-  const total=rows.reduce((s,r)=>s+r[2],0);
-  const zir=rows.reduce((s,r)=>s+r[3],0);
-  const emax=rows.reduce((s,r)=>s+r[4],0);
-  const reps=Math.round(total*0.08);
-  document.getElementById('cerKpis').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Total Trabalhos</div><div class="kpi-value">${total}</div><div class="kpi-sub">enviados</div></div>
-    <div class="kpi green"><div class="kpi-label">Zircônia</div><div class="kpi-value">${zir}</div><div class="kpi-sub">peças</div></div>
-    <div class="kpi blue"><div class="kpi-label">Cerâmica/Emax</div><div class="kpi-value">${emax}</div><div class="kpi-sub">peças</div></div>
-    <div class="kpi red"><div class="kpi-label">Repetições</div><div class="kpi-value">~${reps}</div><div class="kpi-sub">retrabalhos</div></div>`;
-  mkChart('cerMes',{type:'bar',data:{labels:rows.map(r=>fmtMes(r[0],r[1])),datasets:[
-    {label:'Zircônia',data:rows.map(r=>r[3]),backgroundColor:CC.purple,stack:'a'},
-    {label:'Emax',data:rows.map(r=>r[4]),backgroundColor:CC.blue,stack:'a'},
-    {label:'Metal',data:rows.map(r=>r[5]),backgroundColor:CC.yellow,stack:'a'},
-    {label:'Orto',data:rows.map(r=>r[6]),backgroundColor:CC.green,stack:'a'},
-    {label:'Outro',data:rows.map(r=>r[7]),backgroundColor:CC.teal,stack:'a'},
+  // Barras e Soldas (vêm da própria planilha labAcrilico, Tipo="Nova" mas Trabalho contém barra)
+  const barrasSolda=acr.filter(r=>r[1].toLowerCase().includes('barra')||r[1].toLowerCase().includes('solda')).length;
+  const txSolda=total>0?(barrasSolda/total*100).toFixed(1):0;
+
+  document.getElementById('labKpisProtocolo').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Entregues</div><div class="kpi-value">${total}</div><div class="kpi-sub">próteses internas</div></div>
+    <div class="kpi green"><div class="kpi-label">Protocolos Total</div><div class="kpi-value">${protTotal}</div><div class="kpi-sub">def. + provisórios</div></div>
+    <div class="kpi blue"><div class="kpi-label">Prot. Definitivos</div><div class="kpi-value">${protDef}</div><div class="kpi-sub">carga imediata + tardia</div></div>
+    <div class="kpi"><div class="kpi-label">Prot. Provisórios</div><div class="kpi-value">${protProv}</div><div class="kpi-sub">entregues</div></div>
+    <div class="kpi yellow"><div class="kpi-label">PT Definitivas</div><div class="kpi-value">${pt}</div><div class="kpi-sub">próteses totais</div></div>
+    <div class="kpi yellow"><div class="kpi-label">PPR</div><div class="kpi-value">${ppr}</div><div class="kpi-sub">parciais removíveis</div></div>`;
+  document.getElementById('labKpisBarras').innerHTML=`
+    <div class="kpi ${rep>0?'red':'green'}"><div class="kpi-label">Refações</div><div class="kpi-value">${rep}</div><div class="kpi-sub">taxa ${txRef}%</div></div>
+    <div class="kpi blue"><div class="kpi-label">Barras e Soldas</div><div class="kpi-value">${barrasSolda}</div><div class="kpi-sub">taxa ${txSolda}%</div></div>`;
+
+  // Protocolos por mês
+  const byMProt={};
+  acr.forEach(r=>{
+    const ym=exYM(r[0]); const k=mk(ym.y,ym.m);
+    if(!byMProt[k])byMProt[k]={l:fmtMes(ym.y,ym.m),def:0,prov:0,outro:0,barras:0,ref:0};
+    const w=r[1].toLowerCase();
+    if(w.includes('protocol')&&w.includes('definitiv'))byMProt[k].def++;
+    else if(w.includes('protocol')&&w.includes('proviso'))byMProt[k].prov++;
+    else if(w.includes('barra')||w.includes('solda'))byMProt[k].barras++;
+    else byMProt[k].outro++;
+    if((r[2]||'').toLowerCase().includes('repeti'))byMProt[k].ref++;
+  });
+  const sm=Object.keys(byMProt).sort().map(k=>byMProt[k]);
+  mkChart('labProtMes',{type:'bar',data:{labels:sm.map(d=>d.l),datasets:[
+    {label:'Prot. Definitivo',data:sm.map(d=>d.def),backgroundColor:CC.green,stack:'a',borderRadius:2},
+    {label:'Prot. Provisório',data:sm.map(d=>d.prov),backgroundColor:CC.blue,stack:'a',borderRadius:2},
+    {label:'Outros',data:sm.map(d=>d.outro),backgroundColor:CC.teal,stack:'a',borderRadius:2},
   ]},options:baseOpts(true)});
-  const tipoT={Zircônia:zir,'Cerâmica Emax':emax,Metal:rows.reduce((s,r)=>s+r[5],0),Ortodontia:rows.reduce((s,r)=>s+r[6],0),Outro:rows.reduce((s,r)=>s+r[7],0)};
-  mkChart('cerTipo',{type:'doughnut',data:{labels:Object.keys(tipoT),datasets:[{data:Object.values(tipoT),backgroundColor:PAL.slice(0,5),borderWidth:0}]},options:pieOpts()});
-  const labs=Object.keys(DB.cerLabs);
-  mkChart('cerLab',{type:'bar',data:{labels:labs,datasets:[{label:'Trabalhos',data:labs.map(l=>DB.cerLabs[l]),backgroundColor:PAL.slice(0,labs.length)}]},options:hbarOpts()});
-  mkChart('cerRep',{type:'bar',data:{labels:Object.keys(DB.cerReps),datasets:[{label:'Ocorrências',data:Object.values(DB.cerReps),backgroundColor:CC.red,borderRadius:4}]},options:hbarOpts()});
+
+  // Entregas por dentista
+  const byD={};
+  acr.forEach(r=>{byD[r[3]]=(byD[r[3]]||0)+1;});
+  const dk=Object.keys(byD).filter(d=>d).sort((a,b)=>byD[b]-byD[a]).slice(0,8);
+  mkChart('labDentista',{type:'bar',data:{labels:dk,datasets:[{label:'Trabalhos',data:dk.map(k=>byD[k]),backgroundColor:PAL.slice(0,dk.length),borderRadius:3}]},options:hbarOpts()});
+
+  // Barras e Soldas por mês
+  mkChart('labBarrasMes',{type:'bar',data:{labels:sm.map(d=>d.l),datasets:[
+    {label:'Barras/Soldas',data:sm.map(d=>d.barras),backgroundColor:CC.purple,borderRadius:3},
+    {label:'Refações',data:sm.map(d=>d.ref),backgroundColor:CC.red,borderRadius:3},
+  ]},options:baseOpts()});
+
+  // Distribuição por tipo de trabalho
+  const byT={};
+  acr.forEach(r=>{const w=r[1]||'Outro'; byT[w]=(byT[w]||0)+1;});
+  const tk=Object.keys(byT).sort((a,b)=>byT[b]-byT[a]).slice(0,8);
+  mkChart('labTipos',{type:'doughnut',data:{labels:tk,datasets:[{data:tk.map(k=>byT[k]),backgroundColor:PAL.slice(0,tk.length),borderWidth:0}]},options:pieOpts()});
+
+  // ── LAB EXTERNO / CERÂMICO ──
+  const cerRaw=DB.cerRaw||[];
+  const cerF=cerRaw.filter(r=>inFilter(r[0],r[1]));
+  const cerTotal=cerF.length;
+  const corImp=cerF.filter(r=>(r[4]||'').toLowerCase().includes('implante')).length;
+  const corDente=cerF.filter(r=>(r[4]||'').toLowerCase().includes('dente')).length;
+  const facetas=cerF.filter(r=>(r[4]||'').toLowerCase().includes('faceta')).length;
+  const cerRep=cerF.filter(r=>(r[5]||'').toUpperCase()==='SIM').length;
+  const cerAdj=cerF.filter(r=>(r[3]||'').toLowerCase().includes('ajuste')).length;
+  const txCerRep=cerTotal>0?(cerRep/cerTotal*100).toFixed(1):0;
+  const txCerAdj=cerTotal>0?(cerAdj/cerTotal*100).toFixed(1):0;
+
+  document.getElementById('labKpisCer').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Lab Externo</div><div class="kpi-value">${cerTotal}</div><div class="kpi-sub">trabalhos</div></div>
+    <div class="kpi green"><div class="kpi-label">Coroa s/ Implante</div><div class="kpi-value">${corImp}</div><div class="kpi-sub">unidades</div></div>
+    <div class="kpi blue"><div class="kpi-label">Coroa s/ Dente</div><div class="kpi-value">${corDente}</div><div class="kpi-sub">unidades</div></div>
+    <div class="kpi"><div class="kpi-label">Facetas</div><div class="kpi-value">${facetas}</div><div class="kpi-sub">unidades</div></div>
+    <div class="kpi ${cerRep>0?'red':'green'}"><div class="kpi-label">Repetições</div><div class="kpi-value">${cerRep}</div><div class="kpi-sub">${txCerRep}% do total</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Ajustes</div><div class="kpi-value">${cerAdj}</div><div class="kpi-sub">${txCerAdj}% do total</div></div>`;
+
+  // Coroas + Facetas por mês
+  const byMCer={};
+  cerF.forEach(r=>{
+    const k=mk(r[0],r[1]);
+    if(!byMCer[k])byMCer[k]={l:fmtMes(r[0],r[1]),imp:0,dente:0,fac:0,rep:0,adj:0};
+    const trab=(r[4]||'').toLowerCase();
+    const tipo=(r[3]||'').toLowerCase();
+    if(trab.includes('implante'))byMCer[k].imp++;
+    else if(trab.includes('dente'))byMCer[k].dente++;
+    else if(trab.includes('faceta'))byMCer[k].fac++;
+    if((r[5]||'').toUpperCase()==='SIM')byMCer[k].rep++;
+    if(tipo.includes('ajuste'))byMCer[k].adj++;
+  });
+  const cm=Object.keys(byMCer).sort().map(k=>byMCer[k]);
+  mkChart('cerCorMes',{type:'bar',data:{labels:cm.map(d=>d.l),datasets:[
+    {label:'Coroa s/ Implante',data:cm.map(d=>d.imp),backgroundColor:CC.green,stack:'a',borderRadius:2},
+    {label:'Coroa s/ Dente',data:cm.map(d=>d.dente),backgroundColor:CC.blue,stack:'a',borderRadius:2},
+    {label:'Facetas',data:cm.map(d=>d.fac),backgroundColor:CC.yellow,stack:'a',borderRadius:2},
+  ]},options:baseOpts(true)});
+
+  // Distribuição geral
+  const cerDist={};
+  cerF.forEach(r=>{const t=r[4]||'Outro'; cerDist[t]=(cerDist[t]||0)+1;});
+  const cdK=Object.keys(cerDist).sort((a,b)=>cerDist[b]-cerDist[a]).slice(0,8);
+  mkChart('cerDistrib',{type:'doughnut',data:{labels:cdK,datasets:[{data:cdK.map(k=>cerDist[k]),backgroundColor:PAL.slice(0,cdK.length),borderWidth:0}]},options:pieOpts()});
+
+  // Repetições e Ajustes por mês
+  mkChart('cerRefMes',{type:'bar',data:{labels:cm.map(d=>d.l),datasets:[
+    {label:'Repetições',data:cm.map(d=>d.rep),backgroundColor:CC.red,borderRadius:3},
+    {label:'Ajustes',data:cm.map(d=>d.adj),backgroundColor:CC.yellow,borderRadius:3},
+  ]},options:baseOpts()});
+
+  // Dentistas lab externo
+  const cerByD={};
+  cerF.forEach(r=>{const d=r[6]||''; if(d)cerByD[d]=(cerByD[d]||0)+1;});
+  const cdk=Object.keys(cerByD).sort((a,b)=>cerByD[b]-cerByD[a]).slice(0,8);
+  mkChart('cerDentista',{type:'bar',data:{labels:cdk,datasets:[{label:'Trabalhos',data:cdk.map(k=>cerByD[k]),backgroundColor:PAL.slice(0,cdk.length),borderRadius:3}]},options:hbarOpts()});
 }
 
 function renderFinanceiro(){
@@ -987,31 +1061,23 @@ async function carregarSheets(isRefresh){
     const cerCSV=await fetch(csvUrl('labCeramico'),{mode:'cors',credentials:'omit'});
     if(cerCSV.ok){
       const rows=parseCSV(await cerCSV.text());
+      // Colunas: Unidade, DATA DE ENVIO, DATA RETORNO, DATA DE CHEGADA, STATUS, Ficha, Paciente, Qtde, Tipo, Trabalho, Laboratório, Dentista, REPETIÇÃO, JUSTIFICATIVA, DATA PAGAMENTO
       const hi=findHdr(rows,['Tipo','Trabalho','Laboratório']);
       if(hi>=0){
         const hdr=rows[hi].map(h=>h.toLowerCase());
-        const iDt=hdr.findIndex(h=>h.includes('chegada')||h.includes('envio')),iT=hdr.findIndex(h=>h==='tipo'),iL=hdr.findIndex(h=>h.includes('laborat')),iR=hdr.findIndex(h=>h.includes('repeti')),iJ=hdr.findIndex(h=>h.includes('justif'));
-        // Aggregate by month
-        const byMes={};
-        const labs={};
-        const reps={};
+        const iDt=hdr.findIndex(h=>h.includes('chegada')||h.includes('envio'));
+        const iT=hdr.findIndex(h=>h==='tipo');
+        const iTrab=hdr.findIndex(h=>h==='trabalho');
+        const iDn=hdr.findIndex(h=>h.includes('dentista'));
+        const iR=hdr.findIndex(h=>h.includes('repeti'));
+        const newCerRaw=[];
         for(let i=hi+1;i<rows.length;i++){
-          const r=rows[i]; if(!r[iDt]||!r[iT])continue;
+          const r=rows[i]; if(!r[iDt])continue;
           const ym=parseDate(r[iDt]); if(!ym)continue;
-          const k=mk(ym.y,ym.m);
-          if(!byMes[k])byMes[k]=[ym.y,ym.m,0,0,0,0,0,0];
-          byMes[k][2]++;
-          const t=cleanStr(r[iT]).toLowerCase();
-          if(t.includes('zircônia')||t.includes('zirconia'))byMes[k][3]++;
-          else if(t.includes('emax')||t.includes('cerâmica'))byMes[k][4]++;
-          else if(t.includes('metal')||t.includes('solda'))byMes[k][5]++;
-          else if(t.includes('orto'))byMes[k][6]++;
-          else byMes[k][7]++;
-          const lab=cleanStr(r[iL]); if(lab)labs[lab]=(labs[lab]||0)+1;
-          const rep=cleanStr(r[iR]),just=cleanStr(r[iJ]); if(rep==='SIM'&&just)reps[just]=(reps[just]||0)+1;
+          // [ano, mes, qtde(1), tipo, trabalho, repeticao(SIM/NAO), dentista]
+          newCerRaw.push([ym.y,ym.m,1,cleanStr(r[iT]),cleanStr(r[iTrab]),cleanStr(r[iR]),cleanStr(r[iDn])]);
         }
-        const newCer=Object.values(byMes).sort((a,b)=>mk(a[0],a[1])-mk(b[0],b[1]));
-        if(newCer.length>3){DB.cer=newCer;DB.cerLabs=labs;DB.cerReps=Object.keys(reps).length>0?reps:{};updated++;}
+        if(newCerRaw.length>3){DB.cerRaw=newCerRaw;updated++;}
       }
     }
   }catch(e){}
